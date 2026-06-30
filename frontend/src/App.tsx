@@ -219,6 +219,7 @@ function App() {
   return (
     <div className="app">
       <h1>♟ Xadrez</h1>
+      <p className="tagline">Local · contra a IA · online em tempo real</p>
 
       {/* Controles: local (modo/IA) ou info da partida online */}
       {minhaCor === null ? (
