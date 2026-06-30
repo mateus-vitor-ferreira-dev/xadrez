@@ -61,6 +61,16 @@
         </dependency>
 
         <!--
+          starter-websocket: traz suporte a WebSocket + STOMP (mensageria em
+          tempo real). É o que permite o servidor "empurrar" as jogadas para os
+          jogadores conectados, em vez de eles ficarem perguntando (polling).
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+        <!--
           H2 = banco de dados em memória (sobe junto com a app, zero instalação).
           'runtime' = só é necessário ao RODAR, não ao compilar (nosso código não
           importa nada do H2 diretamente; quem usa é o Hibernate, em runtime).
