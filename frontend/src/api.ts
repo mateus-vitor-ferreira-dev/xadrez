@@ -45,12 +45,23 @@ export async function buscarMovimentos(id: number, origem: string): Promise<stri
   return resposta.json() as Promise<string[]>
 }
 
-/** POST /partidas/{id}/jogadas — aplica uma jogada (origem/destino em notação, ex.: "e2"). */
-export async function jogar(id: number, origem: string, destino: string): Promise<EstadoPartida> {
+/** Peça escolhida na promoção (precisa bater com o enum do backend). */
+export type TipoPromocao = 'RAINHA' | 'TORRE' | 'BISPO' | 'CAVALO'
+
+/**
+ * POST /partidas/{id}/jogadas — aplica uma jogada. 'promocao' é opcional;
+ * só importa quando um peão chega à última fileira (default no backend: RAINHA).
+ */
+export async function jogar(
+  id: number,
+  origem: string,
+  destino: string,
+  promocao?: TipoPromocao,
+): Promise<EstadoPartida> {
   const resposta = await fetch(`${BASE}/${id}/jogadas`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ origem, destino }),
+    body: JSON.stringify({ origem, destino, promocao }), // promocao undefined some do JSON
   })
   return lerOuFalhar(resposta)
 }

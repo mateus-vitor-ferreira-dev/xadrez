@@ -3,6 +3,7 @@ package com.mateusferreira.xadrez.service;
 import com.mateusferreira.xadrez.dominio.Partida;
 import com.mateusferreira.xadrez.dominio.Peca;
 import com.mateusferreira.xadrez.dominio.Posicao;
+import com.mateusferreira.xadrez.dominio.TipoPromocao;
 import com.mateusferreira.xadrez.persistencia.PartidaEntity;
 import com.mateusferreira.xadrez.persistencia.PartidaMapper;
 import com.mateusferreira.xadrez.persistencia.PartidaRepository;
@@ -45,14 +46,19 @@ public class PartidaService {
         return new ResultadoPartida(entity.getId(), PartidaMapper.paraDominio(entity));
     }
 
-    /** Aplica uma jogada numa partida e persiste o novo estado. */
+    /** Aplica uma jogada (promoção padrão Rainha). */
     public ResultadoPartida jogar(Long id, Posicao origem, Posicao destino) {
+        return jogar(id, origem, destino, TipoPromocao.RAINHA);
+    }
+
+    /** Aplica uma jogada numa partida e persiste o novo estado. */
+    public ResultadoPartida jogar(Long id, Posicao origem, Posicao destino, TipoPromocao promocao) {
         PartidaEntity entity = buscar(id);
 
         // 1. banco -> domínio
         Partida partida = PartidaMapper.paraDominio(entity);
         // 2. aplica a regra (pode lançar MovimentoInvalidoException -> vira HTTP 400)
-        partida.mover(origem, destino);
+        partida.mover(origem, destino, promocao);
         // 3. domínio -> banco: atualiza a MESMA linha e salva
         entity.setTabuleiro(partida.getTabuleiro().serializar());
         entity.setJogadorAtual(partida.getJogadorAtual());

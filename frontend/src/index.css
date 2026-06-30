@@ -83,6 +83,69 @@ button:disabled {
   border: 5px solid rgba(20, 80, 20, 0.45);
   box-sizing: border-box;
 }
+
+/* destaque do último lance (origem + destino) — vem antes do xeque na ordem */
+.casa.ultimo-lance {
+  background-color: #cdd26a;
+}
+/* rei em xeque — fica por último para "ganhar" o fundo vermelho */
+.casa.em-xeque {
+  background-color: #e57373;
+}
+
+/* rótulos de coordenada (a-h, 1-8) */
+.rotulo {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 700;
+  color: #5b4636;
+  opacity: 0.75;
+}
+.rotulo-rank {
+  top: 2px;
+  left: 3px;
+}
+.rotulo-file {
+  bottom: 1px;
+  right: 4px;
+}
+
+/* seletor de promoção */
+.modal-promocao {
+  margin: 16px auto;
+  max-width: 320px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+}
+.modal-promocao .opcoes {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.modal-promocao .opcoes button {
+  font-size: 32px;
+  line-height: 1;
+  width: 56px;
+  height: 56px;
+}
+
+/* aviso de fim de jogo */
+.fim {
+  margin: 16px auto;
+  max-width: 360px;
+  padding: 16px;
+  border-radius: 8px;
+  background: #1c1c1c;
+  color: #fff;
+}
+.fim p {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
 .casa.clara {
   background: #f0d9b5;
 }

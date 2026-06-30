@@ -3,6 +3,7 @@ package com.mateusferreira.xadrez.controller;
 import com.mateusferreira.xadrez.controller.dto.EstadoPartidaResponse;
 import com.mateusferreira.xadrez.controller.dto.JogadaRequest;
 import com.mateusferreira.xadrez.dominio.Posicao;
+import com.mateusferreira.xadrez.dominio.TipoPromocao;
 import com.mateusferreira.xadrez.service.PartidaService;
 import com.mateusferreira.xadrez.service.ResultadoPartida;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,7 +50,11 @@ public class PartidaController {
     /** POST /partidas/{id}/jogadas -> aplica uma jogada na partida {id}. */
     @PostMapping("/{id}/jogadas")
     public EstadoPartidaResponse jogar(@PathVariable Long id, @RequestBody JogadaRequest jogada) {
-        ResultadoPartida r = service.jogar(id, Posicao.de(jogada.origem()), Posicao.de(jogada.destino()));
+        ResultadoPartida r = service.jogar(
+                id,
+                Posicao.de(jogada.origem()),
+                Posicao.de(jogada.destino()),
+                TipoPromocao.deNome(jogada.promocao()));
         return EstadoPartidaResponse.de(r.id(), r.partida());
     }
 
