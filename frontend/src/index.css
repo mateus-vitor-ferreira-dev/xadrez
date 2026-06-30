@@ -146,6 +146,30 @@ button:disabled {
   font-weight: 600;
   margin-bottom: 12px;
 }
+
+/* seletor de modo / nível */
+.config {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.config button {
+  font-size: 14px;
+  padding: 4px 10px;
+}
+.config button.ativo {
+  background: #2e7d32;
+  color: #fff;
+  border-color: #2e7d32;
+}
+.config .niveis {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 .casa.clara {
   background: #f0d9b5;
 }
