@@ -50,4 +50,15 @@ class PromocaoTest {
         assertInstanceOf(Rainha.class, t.pecaEm(Posicao.de("a1")));
         assertEquals(Cor.PRETO, t.pecaEm(Posicao.de("a1")).getCor());
     }
+
+    @Test
+    void promovePraPecaEscolhida() {
+        Tabuleiro t = comReis();
+        t.colocarPeca(new Peao(Cor.BRANCO), new Posicao(6, 0)); // a7
+        Partida partida = new Partida(t, Cor.BRANCO);
+
+        partida.mover(Posicao.de("a7"), Posicao.de("a8"), TipoPromocao.CAVALO);
+
+        assertInstanceOf(Cavalo.class, t.pecaEm(Posicao.de("a8")));
+    }
 }

@@ -115,7 +115,13 @@ public class Partida {
         return legais;
     }
 
+    /** Move com promoção padrão (Rainha), quando aplicável. */
     public void mover(Posicao origem, Posicao destino) {
+        mover(origem, destino, TipoPromocao.RAINHA);
+    }
+
+    /** Move, promovendo um peão que chegue à última fileira para a peça escolhida. */
+    public void mover(Posicao origem, Posicao destino, TipoPromocao promocao) {
         Peca peca = tabuleiro.pecaEm(origem);
 
         if (peca == null) {
@@ -140,7 +146,7 @@ public class Partida {
             // O peão capturado está AO LADO da origem: mesma linha da origem, coluna do destino.
             tabuleiro.removerPeca(new Posicao(origem.linha(), destino.coluna()));
         }
-        promoverSeNecessario(destino);
+        promoverSeNecessario(destino, promocao);
         atualizarDireitosDeRoque(peca, origem);
         atualizarAlvoEnPassant(peca, origem, destino);
 
@@ -172,13 +178,13 @@ public class Partida {
 
     // ----- Regras especiais -----
 
-    /** Promoção: peão que chega à última fileira vira Rainha. */
-    private void promoverSeNecessario(Posicao destino) {
+    /** Promoção: peão que chega à última fileira vira a peça escolhida (padrão Rainha). */
+    private void promoverSeNecessario(Posicao destino, TipoPromocao promocao) {
         Peca peca = tabuleiro.pecaEm(destino);
         if (peca instanceof Peao) {
             int ultimaFileira = (peca.getCor() == Cor.BRANCO) ? 7 : 0;
             if (destino.linha() == ultimaFileira) {
-                tabuleiro.colocarPeca(new Rainha(peca.getCor()), destino);
+                tabuleiro.colocarPeca(promocao.cria(peca.getCor()), destino);
             }
         }
     }

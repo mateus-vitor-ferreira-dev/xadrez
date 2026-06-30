@@ -9,15 +9,15 @@ const GLIFOS: Record<string, string> = {
 }
 
 interface Props {
-  /** A string de 64 caracteres vinda da API (linha 0→7, coluna 0→7). */
   tabuleiro: string
-  /** A casa de origem selecionada (ex.: "e2"), ou null. */
   selecionada: string | null
-  /** Chamado quando o usuário clica numa casa, passando a notação (ex.: "e4"). */
+  destaques: string[]
+  casaXeque: string | null
+  ultimoLance: { origem: string; destino: string } | null
   onClicarCasa: (notacao: string) => void
 }
 
-function Tabuleiro({ tabuleiro, selecionada, onClicarCasa }: Props) {
+function Tabuleiro({ tabuleiro, selecionada, destaques, casaXeque, ultimoLance, onClicarCasa }: Props) {
   const casas = []
 
   for (let linha = 7; linha >= 0; linha--) {
@@ -28,18 +28,25 @@ function Tabuleiro({ tabuleiro, selecionada, onClicarCasa }: Props) {
       const branca = !vazia && caractere === caractere.toUpperCase()
       const glifo = vazia ? '' : GLIFOS[caractere.toLowerCase()]
 
-      // Notação da casa: coluna 0→'a', linha 0→fileira '1'. Ex.: (1,4) -> "e2".
       const notacao = String.fromCharCode(97 + coluna) + (linha + 1)
-      const destaque = notacao === selecionada ? ' selecionada' : ''
+      const ehDestino = destaques.includes(notacao)
+
+      // Monta as classes da casa (destaques visuais).
+      let classe = `casa ${corDaCasa}`
+      if (ultimoLance && (notacao === ultimoLance.origem || notacao === ultimoLance.destino)) {
+        classe += ' ultimo-lance'
+      }
+      if (notacao === selecionada) classe += ' selecionada'
+      if (notacao === casaXeque) classe += ' em-xeque'
 
       casas.push(
-        <button
-          key={notacao}
-          data-casa={notacao}
-          className={`casa ${corDaCasa}${destaque}`}
-          onClick={() => onClicarCasa(notacao)}
-        >
+        <button key={notacao} data-casa={notacao} className={classe} onClick={() => onClicarCasa(notacao)}>
+          {/* coordenadas: número na 1ª coluna, letra na 1ª fileira (de baixo) */}
+          {coluna === 0 && <span className="rotulo rotulo-rank">{linha + 1}</span>}
+          {linha === 0 && <span className="rotulo rotulo-file">{String.fromCharCode(97 + coluna)}</span>}
+
           <span className={branca ? 'peca branca' : 'peca preta'}>{glifo}</span>
+          {ehDestino && <span className={vazia ? 'marcador' : 'marcador captura'} />}
         </button>,
       )
     }

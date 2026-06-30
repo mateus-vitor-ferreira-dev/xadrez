@@ -3,6 +3,7 @@ package com.mateusferreira.xadrez.controller;
 import com.mateusferreira.xadrez.controller.dto.EstadoPartidaResponse;
 import com.mateusferreira.xadrez.controller.dto.JogadaRequest;
 import com.mateusferreira.xadrez.dominio.Posicao;
+import com.mateusferreira.xadrez.dominio.TipoPromocao;
 import com.mateusferreira.xadrez.service.PartidaService;
 import com.mateusferreira.xadrez.service.ResultadoPartida;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,7 +11,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * Controlador REST das partidas. Continua "fino": só conhece o serviço e os
@@ -46,7 +50,24 @@ public class PartidaController {
     /** POST /partidas/{id}/jogadas -> aplica uma jogada na partida {id}. */
     @PostMapping("/{id}/jogadas")
     public EstadoPartidaResponse jogar(@PathVariable Long id, @RequestBody JogadaRequest jogada) {
-        ResultadoPartida r = service.jogar(id, Posicao.de(jogada.origem()), Posicao.de(jogada.destino()));
+        ResultadoPartida r = service.jogar(
+                id,
+                Posicao.de(jogada.origem()),
+                Posicao.de(jogada.destino()),
+                TipoPromocao.deNome(jogada.promocao()));
         return EstadoPartidaResponse.de(r.id(), r.partida());
+    }
+
+    /**
+     * GET /partidas/{id}/movimentos?origem=e2 -> lista as casas de destino
+     * legais da peça em 'origem' (ex.: ["e3","e4"]). Usado pelo front para
+     * destacar os lances possíveis. @RequestParam lê o parâmetro da query string.
+     */
+    @GetMapping("/{id}/movimentos")
+    public List<String> movimentosLegais(@PathVariable Long id, @RequestParam String origem) {
+        return service.movimentosLegais(id, Posicao.de(origem))
+                .stream()
+                .map(Posicao::toString)
+                .toList();
     }
 }
