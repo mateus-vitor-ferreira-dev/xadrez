@@ -1,216 +1,348 @@
 :root {
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  color: #1c1c1c;
-  background: #fafafa;
+  --bg: #15100c;
+  --ink: #efe3d2;
+  --muted: #b3a18a;
+  --gold: #e6c067;
+  --gold-deep: #c9a227;
+  --surface: rgba(38, 29, 21, 0.66);
+  --surface-line: rgba(230, 192, 103, 0.18);
+  --wood-light: #ecd6a8;
+  --wood-dark: #a3743f;
+  --frame: #2e2015;
+  --danger: #d65a48;
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body: 'Outfit', system-ui, sans-serif;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background:
+    radial-gradient(1100px 760px at 50% -12%, #34261a 0%, transparent 58%),
+    radial-gradient(900px 700px at 50% 116%, #281c12 0%, transparent 55%),
+    var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* grão sutil sobre todo o fundo, dá textura sem imagem externa */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 .app {
-  max-width: 560px;
+  position: relative;
+  z-index: 1;
+  max-width: 600px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 40px 20px 60px;
   text-align: center;
 }
 
+/* ---------- Cabeçalho ---------- */
 h1 {
+  margin: 0;
+  font-family: var(--font-display);
   font-weight: 600;
+  font-size: clamp(40px, 8vw, 64px);
+  letter-spacing: 0.5px;
+  line-height: 1.05;
+  background: linear-gradient(180deg, #f6e4b8 0%, var(--gold) 55%, var(--gold-deep) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: surgir 0.7s ease both;
 }
 
+.tagline {
+  margin: 10px 0 26px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--muted);
+  animation: surgir 0.7s ease 0.08s both;
+}
+
+/* ---------- Botões ---------- */
 button {
-  font-size: 16px;
-  padding: 8px 16px;
-  border: 1px solid #888;
-  border-radius: 6px;
-  background: #fff;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 9px 18px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--surface-line);
+  border-radius: 999px;
   cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease,
+    transform 0.18s ease, box-shadow 0.18s ease;
+}
+button:hover:not(:disabled) {
+  color: var(--gold);
+  border-color: var(--gold);
+  transform: translateY(-1px);
 }
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.45;
   cursor: default;
 }
-
-.status {
-  margin: 16px 0;
-  font-size: 18px;
-}
-.status .alerta {
-  color: crimson;
-  font-weight: 600;
+/* botão "ativo" (modo/nível) e CTAs viram dourado sólido */
+button.ativo {
+  color: #1c140c;
+  background: linear-gradient(180deg, #f0d488, var(--gold));
+  border-color: var(--gold);
+  box-shadow: 0 6px 18px -6px rgba(230, 192, 103, 0.6);
 }
 
-/* ---- Tabuleiro ---- */
-.tabuleiro {
-  display: grid;
-  grid-template-columns: repeat(8, 56px);
-  grid-template-rows: repeat(8, 56px);
-  width: max-content;
-  margin: 16px auto;
-  border: 3px solid #5b4636;
-}
-
-.casa {
-  position: relative; /* para posicionar os marcadores de lance legal */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 40px;
-  line-height: 1;
-  user-select: none;
-  /* reset do <button>: as casas agora são botões (clicáveis e acessíveis) */
-  border: 0;
-  padding: 0;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-/* marcador de lance legal: bolinha central (casa vazia) */
-.marcador {
-  position: absolute;
-  width: 30%;
-  height: 30%;
-  border-radius: 50%;
-  background: rgba(20, 80, 20, 0.45);
-  pointer-events: none;
-}
-/* captura: anel ao redor da peça adversária */
-.marcador.captura {
-  width: 86%;
-  height: 86%;
-  background: transparent;
-  border: 5px solid rgba(20, 80, 20, 0.45);
-  box-sizing: border-box;
-}
-
-/* destaque do último lance (origem + destino) — vem antes do xeque na ordem */
-.casa.ultimo-lance {
-  background-color: #cdd26a;
-}
-/* rei em xeque — fica por último para "ganhar" o fundo vermelho */
-.casa.em-xeque {
-  background-color: #e57373;
-}
-
-/* rótulos de coordenada (a-h, 1-8) */
-.rotulo {
-  position: absolute;
-  font-size: 11px;
-  font-weight: 700;
-  color: #5b4636;
-  opacity: 0.75;
-}
-.rotulo-rank {
-  top: 2px;
-  left: 3px;
-}
-.rotulo-file {
-  bottom: 1px;
-  right: 4px;
-}
-
-/* seletor de promoção */
-.modal-promocao {
-  margin: 16px auto;
-  max-width: 320px;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: #fff;
-}
-.modal-promocao .opcoes {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 8px;
-}
-.modal-promocao .opcoes button {
-  font-size: 32px;
-  line-height: 1;
-  width: 56px;
-  height: 56px;
-}
-
-/* aviso de fim de jogo */
-.fim {
-  margin: 16px auto;
-  max-width: 360px;
-  padding: 16px;
-  border-radius: 8px;
-  background: #1c1c1c;
-  color: #fff;
-}
-.fim p {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
-/* seletor de modo / nível */
 .config {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 12px;
+  animation: surgir 0.7s ease 0.16s both;
 }
-.config button {
+.config > span {
+  color: var(--muted);
   font-size: 14px;
-  padding: 4px 10px;
-}
-.config button.ativo {
-  background: #2e7d32;
-  color: #fff;
-  border-color: #2e7d32;
 }
 .config .niveis {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.config .niveis button {
+  padding: 6px 12px;
 }
 
-/* info da partida online */
+/* ---------- Status ---------- */
+.status {
+  margin: 18px 0;
+  font-size: 16px;
+  color: var(--muted);
+}
+.status strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.status .alerta {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ---------- Tabuleiro ---------- */
+.tabuleiro {
+  display: grid;
+  grid-template-columns: repeat(8, clamp(38px, 10.6vw, 60px));
+  grid-template-rows: repeat(8, clamp(38px, 10.6vw, 60px));
+  width: max-content;
+  margin: 18px auto;
+  padding: 10px;
+  border-radius: 10px;
+  background:
+    linear-gradient(145deg, #3a2818, #241810);
+  box-shadow:
+    0 38px 70px -28px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(230, 192, 103, 0.14),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.35);
+  animation: surgir 0.55s ease both;
+}
+
+.casa {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(24px, 7vw, 40px);
+  line-height: 1;
+  user-select: none;
+  border: 0;
+  border-radius: 0; /* sobrescreve o arredondamento do <button> base: casas são quadradas */
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.casa:hover {
+  filter: brightness(1.06);
+}
+.casa.clara {
+  background: var(--wood-light);
+}
+.casa.escura {
+  background: var(--wood-dark);
+}
+
+/* peças com leve relevo */
+.peca {
+  position: relative;
+  z-index: 1;
+}
+.peca.branca {
+  color: #f7f0e1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.38));
+}
+.peca.preta {
+  color: #241a12;
+  filter: drop-shadow(0 2px 1px rgba(255, 255, 255, 0.12));
+}
+
+/* destaques */
+.casa.ultimo-lance {
+  box-shadow: inset 0 0 0 2000px rgba(230, 192, 103, 0.26);
+}
+.casa.selecionada {
+  box-shadow: inset 0 0 0 4px var(--gold), inset 0 0 22px rgba(230, 192, 103, 0.55);
+}
+.casa.em-xeque {
+  box-shadow: inset 0 0 0 2000px rgba(214, 90, 72, 0.5);
+  animation: pulsoXeque 1.1s ease-in-out infinite;
+}
+
+/* marcadores de lance legal */
+.marcador {
+  position: absolute;
+  z-index: 1;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: rgba(40, 28, 16, 0.4);
+  pointer-events: none;
+}
+.casa.clara .marcador {
+  background: rgba(40, 28, 16, 0.32);
+}
+.marcador.captura {
+  width: 88%;
+  height: 88%;
+  background: transparent;
+  border: 5px solid rgba(40, 28, 16, 0.38);
+  box-sizing: border-box;
+}
+
+/* coordenadas */
+.rotulo {
+  position: absolute;
+  z-index: 2;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--frame);
+  opacity: 0.65;
+}
+.rotulo-rank {
+  top: 3px;
+  left: 4px;
+}
+.rotulo-file {
+  bottom: 2px;
+  right: 5px;
+}
+
+/* ---------- Cartões (promoção, fim, online) ---------- */
+.modal-promocao,
+.fim,
 .online-info {
-  margin-bottom: 12px;
+  margin: 18px auto;
+  max-width: 420px;
+  padding: 18px 20px;
+  border: 1px solid var(--surface-line);
+  border-radius: 14px;
+  background: var(--surface);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.7);
+  animation: surgir 0.4s ease both;
+}
+.modal-promocao p,
+.fim p {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.modal-promocao .opcoes {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.modal-promocao .opcoes button {
+  font-size: 30px;
+  line-height: 1;
+  width: 60px;
+  height: 60px;
+  color: var(--gold);
+  padding: 0;
+}
+
+.online-info {
+  animation: surgir 0.7s ease 0.16s both;
+}
+.online-info p {
+  margin: 0;
+  color: var(--muted);
+}
+.online-info strong {
+  color: var(--gold);
 }
 .online-info .ok {
-  color: #2e7d32;
+  color: #6fce86;
 }
 .online-info .off {
-  color: #b26a00;
+  color: var(--gold-deep);
 }
 .online-info .convite {
   font-size: 13px;
-  color: #555;
-  margin-top: 6px;
+  margin-top: 12px;
 }
 .online-info .convite input {
   display: block;
   width: 100%;
-  max-width: 420px;
-  margin: 4px auto 0;
-  padding: 6px 8px;
+  margin: 8px auto 0;
+  padding: 9px 12px;
+  font-family: var(--font-body);
   font-size: 12px;
-  border: 1px solid #bbb;
-  border-radius: 6px;
-}
-.casa.clara {
-  background: #f0d9b5;
-}
-.casa.escura {
-  background: #b58863;
-}
-/* casa de origem selecionada: moldura verde por dentro */
-.casa.selecionada {
-  box-shadow: inset 0 0 0 4px #2e7d32;
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--surface-line);
+  border-radius: 8px;
 }
 
-.peca.branca {
-  color: #ffffff;
-  text-shadow: 0 0 2px #000, 0 0 3px #000;
+/* ---------- Animações ---------- */
+@keyframes surgir {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
-.peca.preta {
-  color: #1a1a1a;
+@keyframes pulsoXeque {
+  0%, 100% {
+    box-shadow: inset 0 0 0 2000px rgba(214, 90, 72, 0.42);
+  }
+  50% {
+    box-shadow: inset 0 0 0 2000px rgba(214, 90, 72, 0.62);
+  }
 }
