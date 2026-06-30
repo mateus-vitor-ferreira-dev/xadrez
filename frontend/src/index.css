@@ -1,0 +1,84 @@
+:root {
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: #1c1c1c;
+  background: #fafafa;
+}
+
+body {
+  margin: 0;
+}
+
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px;
+  text-align: center;
+}
+
+h1 {
+  font-weight: 600;
+}
+
+button {
+  font-size: 16px;
+  padding: 8px 16px;
+  border: 1px solid #888;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.status {
+  margin: 16px 0;
+  font-size: 18px;
+}
+.status .alerta {
+  color: crimson;
+  font-weight: 600;
+}
+
+/* ---- Tabuleiro ---- */
+.tabuleiro {
+  display: grid;
+  grid-template-columns: repeat(8, 56px);
+  grid-template-rows: repeat(8, 56px);
+  width: max-content;
+  margin: 16px auto;
+  border: 3px solid #5b4636;
+}
+
+.casa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  line-height: 1;
+  user-select: none;
+  /* reset do <button>: as casas agora são botões (clicáveis e acessíveis) */
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.casa.clara {
+  background: #f0d9b5;
+}
+.casa.escura {
+  background: #b58863;
+}
+/* casa de origem selecionada: moldura verde por dentro */
+.casa.selecionada {
+  box-shadow: inset 0 0 0 4px #2e7d32;
+}
+
+.peca.branca {
+  color: #ffffff;
+  text-shadow: 0 0 2px #000, 0 0 3px #000;
+}
+.peca.preta {
+  color: #1a1a1a;
+}

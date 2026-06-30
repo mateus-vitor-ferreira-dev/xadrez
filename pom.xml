@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <!-- Versão do "modelo" do pom.xml em si. Sempre 4.0.0 no Maven atual. -->
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+      O <parent> faz o nosso projeto HERDAR configurações do Spring Boot.
+      É como "extends" em Java, só que para o build. Graças a ele NÃO
+      precisamos dizer a versão de cada biblioteca Spring uma por uma:
+      o parent já sabe quais versões funcionam juntas (isso se chama BOM,
+      "Bill of Materials"). É o que evita o clássico "inferno de versões".
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.5</version>
+        <relativePath/> <!-- vazio = buscar o parent no repositório, não numa pasta local -->
+    </parent>
+
+    <!--
+      Coordenadas que identificam ESTE projeto de forma única no mundo Maven:
+      groupId    = "quem" (geralmente domínio invertido da pessoa/empresa)
+      artifactId = "o quê" (nome do projeto)
+      version    = a versão do nosso jogo (SNAPSHOT = "em desenvolvimento")
+    -->
+    <groupId>com.mateusferreira</groupId>
+    <artifactId>xadrez</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>xadrez</name>
+    <description>Jogo de xadrez - projeto de estudo Java + Spring Boot</description>
+
+    <!-- Propriedades reaproveitáveis. Aqui fixamos a versão do Java do projeto. -->
+    <properties>
+        <java.version>21</java.version>
+    </properties>
+
+    <dependencies>
+        <!--
+          starter-web = pacote para construir APIs/aplicações WEB. Ele JÁ INCLUI
+          o starter base (núcleo do Spring) e adiciona:
+            - Spring MVC  (mapear URLs -> métodos Java)
+            - Tomcat embutido (servidor web dentro do próprio JAR)
+            - Jackson     (conversão automática objeto Java <-> JSON)
+          Foi a ÚNICA linha que mudou para nossa aplicação virar um servidor web.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!--
+          starter-data-jpa = JPA + Hibernate + Spring Data (repositórios prontos).
+          É o que nos deixa persistir objetos no banco sem escrever SQL na mão.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!--
+          H2 = banco de dados em memória (sobe junto com a app, zero instalação).
+          'runtime' = só é necessário ao RODAR, não ao compilar (nosso código não
+          importa nada do H2 diretamente; quem usa é o Hibernate, em runtime).
+        -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!--
+          Driver do PostgreSQL, usado em PRODUÇÃO (Railway). Fica como 'runtime':
+          nosso código não importa nada dele; quem o usa é o Hibernate ao rodar.
+          Em dev/testes continuamos no H2; a escolha é feita por configuração
+          (perfil 'prod' + variáveis de ambiente), não por código.
+        -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!--
+          Ferramentas de teste (JUnit 5, AssertJ, Mockito...). É com isto que
+          vamos VALIDAR as regras do xadrez na etapa 1, sem precisar nem
+          ligar a aplicação. 'scope=test' = só existe durante os testes,
+          não vai para o programa final.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+              Plugin que ensina o Maven a EMPACOTAR e RODAR uma app Spring Boot
+              (gera um .jar "executável" com tudo dentro e dá o comando
+              'mvn spring-boot:run').
+            -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

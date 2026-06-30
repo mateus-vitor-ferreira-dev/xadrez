@@ -1,0 +1,6 @@
+# Não envia para o build do backend o que não é necessário (build mais rápido e leve).
+target/
+frontend/
+.git/
+.idea/
+*.iml
