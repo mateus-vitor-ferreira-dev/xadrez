@@ -6,6 +6,7 @@ import com.mateusferreira.xadrez.dominio.Posicao;
 import com.mateusferreira.xadrez.dominio.TipoPromocao;
 import com.mateusferreira.xadrez.service.PartidaService;
 import com.mateusferreira.xadrez.service.ResultadoPartida;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,9 +26,16 @@ import java.util.List;
 public class PartidaController {
 
     private final PartidaService service;
+    private final SimpMessagingTemplate messaging;
 
-    public PartidaController(PartidaService service) {
+    public PartidaController(PartidaService service, SimpMessagingTemplate messaging) {
         this.service = service;
+        this.messaging = messaging;
+    }
+
+    /** Publica o estado da partida no tópico, avisando os clientes conectados em tempo real. */
+    private void publicar(EstadoPartidaResponse estado) {
+        messaging.convertAndSend("/topic/partidas/" + estado.id(), estado);
     }
 
     /** POST /partidas -> cria uma partida nova e devolve o estado (com o id). */
@@ -55,7 +63,9 @@ public class PartidaController {
                 Posicao.de(jogada.origem()),
                 Posicao.de(jogada.destino()),
                 TipoPromocao.deNome(jogada.promocao()));
-        return EstadoPartidaResponse.de(r.id(), r.partida());
+        EstadoPartidaResponse estado = EstadoPartidaResponse.de(r.id(), r.partida());
+        publicar(estado); // avisa os dois jogadores em tempo real
+        return estado;
     }
 
     /**
@@ -79,6 +89,8 @@ public class PartidaController {
     public EstadoPartidaResponse jogadaIA(@PathVariable Long id,
                                           @RequestParam(defaultValue = "2") int nivel) {
         ResultadoPartida r = service.jogarIA(id, nivel);
-        return EstadoPartidaResponse.de(r.id(), r.partida());
+        EstadoPartidaResponse estado = EstadoPartidaResponse.de(r.id(), r.partida());
+        publicar(estado);
+        return estado;
     }
 }
