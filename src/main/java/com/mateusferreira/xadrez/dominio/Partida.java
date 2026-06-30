@@ -83,6 +83,19 @@ public class Partida {
         return alvoEnPassant;
     }
 
+    /**
+     * Cria uma cópia independente da partida (tabuleiro + vez + direitos de
+     * roque + alvo de en passant). Usada pela IA para SIMULAR lances sem
+     * alterar a partida real. É barato porque as peças não têm estado mutável.
+     */
+    public Partida copia() {
+        return new Partida(
+                tabuleiro.copia(),
+                jogadorAtual,
+                roqueReiBranco, roqueDamaBranco, roqueReiPreto, roqueDamaPreto,
+                alvoEnPassant);
+    }
+
     public boolean estaEmXeque(Cor cor) {
         return tabuleiro.estaEmXeque(cor);
     }

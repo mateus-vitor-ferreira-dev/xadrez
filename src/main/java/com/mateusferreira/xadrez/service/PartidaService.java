@@ -1,5 +1,7 @@
 package com.mateusferreira.xadrez.service;
 
+import com.mateusferreira.xadrez.dominio.Jogada;
+import com.mateusferreira.xadrez.dominio.MotorIA;
 import com.mateusferreira.xadrez.dominio.Partida;
 import com.mateusferreira.xadrez.dominio.Peca;
 import com.mateusferreira.xadrez.dominio.Posicao;
@@ -10,6 +12,7 @@ import com.mateusferreira.xadrez.persistencia.PartidaRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Camada de SERVIÇO: orquestra os casos de uso e agora PERSISTE as partidas no
@@ -23,6 +26,9 @@ import java.util.List;
 public class PartidaService {
 
     private final PartidaRepository repository;
+
+    // Motor de IA (Java puro, sem estado): pode ser reutilizado entre chamadas.
+    private final MotorIA motor = new MotorIA();
 
     public PartidaService(PartidaRepository repository) {
         this.repository = repository;
@@ -59,14 +65,37 @@ public class PartidaService {
         Partida partida = PartidaMapper.paraDominio(entity);
         // 2. aplica a regra (pode lançar MovimentoInvalidoException -> vira HTTP 400)
         partida.mover(origem, destino, promocao);
-        // 3. domínio -> banco: atualiza a MESMA linha e salva
+        // 3. domínio -> banco
+        salvar(entity, partida);
+
+        return new ResultadoPartida(entity.getId(), partida);
+    }
+
+    /**
+     * Faz a IA jogar pelo jogador da vez (nível = profundidade da busca, 1–4).
+     * Se não houver lance possível (fim de jogo), apenas devolve o estado atual.
+     */
+    public ResultadoPartida jogarIA(Long id, int nivel) {
+        PartidaEntity entity = buscar(id);
+        Partida partida = PartidaMapper.paraDominio(entity);
+
+        int profundidade = Math.max(1, Math.min(nivel, 4));
+        Optional<Jogada> jogada = motor.melhorJogada(partida, profundidade);
+        if (jogada.isPresent()) {
+            Jogada j = jogada.get();
+            partida.mover(j.origem(), j.destino()); // IA promove para rainha (padrão)
+            salvar(entity, partida);
+        }
+        return new ResultadoPartida(entity.getId(), partida);
+    }
+
+    /** Persiste o estado atual do domínio na entidade (reaproveitado por jogar/jogarIA). */
+    private void salvar(PartidaEntity entity, Partida partida) {
         entity.setTabuleiro(partida.getTabuleiro().serializar());
         entity.setJogadorAtual(partida.getJogadorAtual());
         entity.setRoque(partida.direitosDeRoque());
         entity.setEnPassant(serializarAlvo(partida));
         repository.save(entity);
-
-        return new ResultadoPartida(entity.getId(), partida);
     }
 
     /**

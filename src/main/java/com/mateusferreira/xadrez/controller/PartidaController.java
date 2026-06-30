@@ -70,4 +70,15 @@ public class PartidaController {
                 .map(Posicao::toString)
                 .toList();
     }
+
+    /**
+     * POST /partidas/{id}/jogada-ia?nivel=2 -> a IA joga pelo jogador da vez.
+     * 'nivel' (1–4) é a profundidade da busca minimax (default 2).
+     */
+    @PostMapping("/{id}/jogada-ia")
+    public EstadoPartidaResponse jogadaIA(@PathVariable Long id,
+                                          @RequestParam(defaultValue = "2") int nivel) {
+        ResultadoPartida r = service.jogarIA(id, nivel);
+        return EstadoPartidaResponse.de(r.id(), r.partida());
+    }
 }
