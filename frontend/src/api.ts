@@ -38,6 +38,13 @@ export async function buscarPartida(id: number): Promise<EstadoPartida> {
   return lerOuFalhar(await fetch(`${BASE}/${id}`))
 }
 
+/** GET /partidas/{id}/movimentos?origem=e2 — casas de destino legais (ex.: ["e3","e4"]). */
+export async function buscarMovimentos(id: number, origem: string): Promise<string[]> {
+  const resposta = await fetch(`${BASE}/${id}/movimentos?origem=${origem}`)
+  if (!resposta.ok) return []
+  return resposta.json() as Promise<string[]>
+}
+
 /** POST /partidas/{id}/jogadas — aplica uma jogada (origem/destino em notação, ex.: "e2"). */
 export async function jogar(id: number, origem: string, destino: string): Promise<EstadoPartida> {
   const resposta = await fetch(`${BASE}/${id}/jogadas`, {

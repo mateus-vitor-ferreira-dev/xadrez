@@ -13,11 +13,13 @@ interface Props {
   tabuleiro: string
   /** A casa de origem selecionada (ex.: "e2"), ou null. */
   selecionada: string | null
+  /** Casas de destino legais a destacar (ex.: ["e3","e4"]). */
+  destaques: string[]
   /** Chamado quando o usuário clica numa casa, passando a notação (ex.: "e4"). */
   onClicarCasa: (notacao: string) => void
 }
 
-function Tabuleiro({ tabuleiro, selecionada, onClicarCasa }: Props) {
+function Tabuleiro({ tabuleiro, selecionada, destaques, onClicarCasa }: Props) {
   const casas = []
 
   for (let linha = 7; linha >= 0; linha--) {
@@ -28,9 +30,9 @@ function Tabuleiro({ tabuleiro, selecionada, onClicarCasa }: Props) {
       const branca = !vazia && caractere === caractere.toUpperCase()
       const glifo = vazia ? '' : GLIFOS[caractere.toLowerCase()]
 
-      // Notação da casa: coluna 0→'a', linha 0→fileira '1'. Ex.: (1,4) -> "e2".
       const notacao = String.fromCharCode(97 + coluna) + (linha + 1)
       const destaque = notacao === selecionada ? ' selecionada' : ''
+      const ehDestino = destaques.includes(notacao)
 
       casas.push(
         <button
@@ -40,6 +42,8 @@ function Tabuleiro({ tabuleiro, selecionada, onClicarCasa }: Props) {
           onClick={() => onClicarCasa(notacao)}
         >
           <span className={branca ? 'peca branca' : 'peca preta'}>{glifo}</span>
+          {/* marcador de lance legal: bolinha se a casa está vazia; anel se for captura */}
+          {ehDestino && <span className={vazia ? 'marcador' : 'marcador captura'} />}
         </button>,
       )
     }

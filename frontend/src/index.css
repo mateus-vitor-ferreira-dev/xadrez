@@ -52,6 +52,7 @@ button:disabled {
 }
 
 .casa {
+  position: relative; /* para posicionar os marcadores de lance legal */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -63,6 +64,24 @@ button:disabled {
   padding: 0;
   font-family: inherit;
   cursor: pointer;
+}
+
+/* marcador de lance legal: bolinha central (casa vazia) */
+.marcador {
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: rgba(20, 80, 20, 0.45);
+  pointer-events: none;
+}
+/* captura: anel ao redor da peça adversária */
+.marcador.captura {
+  width: 86%;
+  height: 86%;
+  background: transparent;
+  border: 5px solid rgba(20, 80, 20, 0.45);
+  box-sizing: border-box;
 }
 .casa.clara {
   background: #f0d9b5;

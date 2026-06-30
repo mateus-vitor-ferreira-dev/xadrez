@@ -1,11 +1,14 @@
 package com.mateusferreira.xadrez.service;
 
 import com.mateusferreira.xadrez.dominio.Partida;
+import com.mateusferreira.xadrez.dominio.Peca;
 import com.mateusferreira.xadrez.dominio.Posicao;
 import com.mateusferreira.xadrez.persistencia.PartidaEntity;
 import com.mateusferreira.xadrez.persistencia.PartidaMapper;
 import com.mateusferreira.xadrez.persistencia.PartidaRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * Camada de SERVIÇO: orquestra os casos de uso e agora PERSISTE as partidas no
@@ -58,6 +61,22 @@ public class PartidaService {
         repository.save(entity);
 
         return new ResultadoPartida(entity.getId(), partida);
+    }
+
+    /**
+     * Lista os movimentos legais da peça que está em 'origem' — usado para
+     * destacar os destinos no tabuleiro. Só devolve algo se a peça for da cor
+     * de quem é a vez (não faz sentido destacar lances de peças do adversário).
+     */
+    public List<Posicao> movimentosLegais(Long id, Posicao origem) {
+        PartidaEntity entity = buscar(id);
+        Partida partida = PartidaMapper.paraDominio(entity);
+
+        Peca peca = partida.getTabuleiro().pecaEm(origem);
+        if (peca == null || peca.getCor() != partida.getJogadorAtual()) {
+            return List.of();
+        }
+        return partida.movimentosLegais(origem);
     }
 
     /** Converte o alvo de en passant da partida em texto ("e3") ou null. */
