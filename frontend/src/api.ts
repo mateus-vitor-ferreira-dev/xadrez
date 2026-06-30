@@ -38,6 +38,12 @@ export async function buscarPartida(id: number): Promise<EstadoPartida> {
   return lerOuFalhar(await fetch(`${BASE}/${id}`))
 }
 
+/** POST /partidas/{id}/jogada-ia?nivel=N — a IA joga pelo jogador da vez. */
+export async function jogadaIA(id: number, nivel: number): Promise<EstadoPartida> {
+  const resposta = await fetch(`${BASE}/${id}/jogada-ia?nivel=${nivel}`, { method: 'POST' })
+  return lerOuFalhar(resposta)
+}
+
 /** GET /partidas/{id}/movimentos?origem=e2 — casas de destino legais (ex.: ["e3","e4"]). */
 export async function buscarMovimentos(id: number, origem: string): Promise<string[]> {
   const resposta = await fetch(`${BASE}/${id}/movimentos?origem=${origem}`)
