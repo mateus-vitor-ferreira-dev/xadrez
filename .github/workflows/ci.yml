@@ -1,6 +1,8 @@
 name: CI
 
-on:
+# 'on' entre aspas: em YAML 1.1 a palavra on é interpretada como booleano,
+# o que faz alguns editores acusarem um falso erro. As aspas evitam isso.
+"on":
   push:
     branches: [main, develop]
   pull_request:
