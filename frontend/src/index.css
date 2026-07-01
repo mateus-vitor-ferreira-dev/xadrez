@@ -806,6 +806,29 @@ a.toggle:hover {
   margin-top: 4px;
   padding: 11px;
 }
+/* divisor "ou" entre o formulário e o login com Google */
+.auth-ou {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.auth-ou::before,
+.auth-ou::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--surface-line);
+}
+.botao-google {
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
+}
 .auth-troca {
   margin: 4px 0 0;
   font-size: 13px;

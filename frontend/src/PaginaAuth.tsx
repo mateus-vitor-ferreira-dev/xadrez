@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
-import { login, registrar } from './api'
+import { googleLogin, login, registrar } from './api'
 import { useAuth } from './auth'
+import BotaoGoogle from './BotaoGoogle'
 
 /**
  * Tela dedicada de autenticação. É UM único componente reusado nas duas rotas
@@ -30,6 +31,21 @@ export default function PaginaAuth({ modo }: { modo: 'login' | 'registro' }) {
       navigate('/') // sessão criada: de volta ao jogo
     },
     onError: (e) => setErro(e instanceof Error ? e.message : 'Falha na autenticação.'),
+  })
+
+  // Login com Google: se a conta já existe, entra; se é o 1º acesso, vai para a
+  // tela de escolher apelido levando o credential do Google.
+  const comGoogle = useMutation({
+    mutationFn: (credential: string) => googleLogin(credential),
+    onSuccess: (r, credential) => {
+      if (r.novo) {
+        navigate('/apelido', { state: { credential, sugestao: r.sugestaoApelido } })
+      } else if (r.sessao) {
+        definir(r.sessao)
+        navigate('/')
+      }
+    },
+    onError: (e) => setErro(e instanceof Error ? e.message : 'Falha no login com Google.'),
   })
 
   function enviar() {
@@ -101,6 +117,9 @@ export default function PaginaAuth({ modo }: { modo: 'login' | 'registro' }) {
         </button>
 
         {erro && <p className="status alerta">{erro}</p>}
+
+        <div className="auth-ou"><span>ou</span></div>
+        <BotaoGoogle onCredential={(c) => comGoogle.mutate(c)} />
 
         {/* Link para a outra tela (as duas se apontam mutuamente). */}
         <p className="auth-troca">
