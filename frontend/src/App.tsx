@@ -6,7 +6,10 @@ import {
   buscarPartida,
   jogadaIA,
   jogar,
+  login,
   novaPartida,
+  registrar,
+  type Autenticacao,
   type Cor,
   type EstadoPartida,
   type TipoPromocao,
@@ -83,6 +86,17 @@ function App() {
   const [historico, setHistorico] = useState<string[]>([])
   const [tema, setTema] = useState<'escuro' | 'claro'>(() => (localStorage.getItem('tema') === 'claro' ? 'claro' : 'escuro'))
   const [mudo, setMudo] = useState<boolean>(() => localStorage.getItem('mudo') === '1')
+  const [auth, setAuth] = useState<Autenticacao | null>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('auth') ?? 'null') as Autenticacao | null
+    } catch {
+      return null
+    }
+  })
+  const [modoAuth, setModoAuth] = useState<'login' | 'cadastro'>('login')
+  const [formUsuario, setFormUsuario] = useState('')
+  const [formSenha, setFormSenha] = useState('')
+  const [erroAuth, setErroAuth] = useState<string | null>(null)
 
   const partida = useQuery({
     queryKey: ['partida', idPartida],
@@ -206,6 +220,30 @@ function App() {
     onError: (e) => setErro(e instanceof Error ? e.message : 'Jogada inválida'),
   })
 
+  const autenticar = useMutation({
+    mutationFn: (v: { modo: 'login' | 'cadastro'; usuario: string; senha: string }) =>
+      (v.modo === 'login' ? login : registrar)(v.usuario, v.senha),
+    onSuccess: (a) => {
+      setAuth(a)
+      localStorage.setItem('auth', JSON.stringify(a))
+      setFormSenha('')
+      setErroAuth(null)
+    },
+    onError: (e) => setErroAuth(e instanceof Error ? e.message : 'Falha na autenticação.'),
+  })
+
+  function sair() {
+    setAuth(null)
+    localStorage.removeItem('auth')
+  }
+  function enviarAuth() {
+    if (formUsuario.trim().length < 3 || formSenha.length < 4) {
+      setErroAuth('Usuário (3+ caracteres) e senha (4+) são obrigatórios.')
+      return
+    }
+    autenticar.mutate({ modo: modoAuth, usuario: formUsuario.trim(), senha: formSenha })
+  }
+
   function pecaEm(notacao: string): string {
     if (!estado) return '.'
     return estado.tabuleiro[(Number(notacao[1]) - 1) * 8 + (notacao.charCodeAt(0) - 97)]
@@ -292,12 +330,24 @@ function App() {
   return (
     <div className="app">
       <div className="barra-topo">
-        <button className="toggle" title="Tema" onClick={() => setTema((t) => (t === 'escuro' ? 'claro' : 'escuro'))}>
-          {tema === 'escuro' ? '☀️' : '🌙'}
-        </button>
-        <button className="toggle" title="Som" onClick={() => setMudo((m) => !m)}>
-          {mudo ? '🔇' : '🔊'}
-        </button>
+        <div className="usuario-area">
+          {auth && (
+            <>
+              <span className="usuario-logado">♟ {auth.usuario} · Elo {auth.elo}</span>
+              <button className="toggle" onClick={sair}>
+                Sair
+              </button>
+            </>
+          )}
+        </div>
+        <div className="toggles">
+          <button className="toggle" title="Tema" onClick={() => setTema((t) => (t === 'escuro' ? 'claro' : 'escuro'))}>
+            {tema === 'escuro' ? '☀️' : '🌙'}
+          </button>
+          <button className="toggle" title="Som" onClick={() => setMudo((m) => !m)}>
+            {mudo ? '🔇' : '🔊'}
+          </button>
+        </div>
       </div>
 
       <header className="topo">
@@ -307,6 +357,32 @@ function App() {
 
       {!emJogo ? (
         <div className="lobby">
+          {!auth && (
+            <div className="auth-card">
+              <div className="auth-tabs">
+                <button className={modoAuth === 'login' ? 'ativo' : ''} onClick={() => setModoAuth('login')}>
+                  Entrar
+                </button>
+                <button className={modoAuth === 'cadastro' ? 'ativo' : ''} onClick={() => setModoAuth('cadastro')}>
+                  Criar conta
+                </button>
+              </div>
+              <input placeholder="Usuário" value={formUsuario} onChange={(e) => setFormUsuario(e.target.value)} />
+              <input
+                type="password"
+                placeholder="Senha"
+                value={formSenha}
+                onChange={(e) => setFormSenha(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && enviarAuth()}
+              />
+              <button className="primario" onClick={enviarAuth} disabled={autenticar.isPending}>
+                {autenticar.isPending ? '…' : modoAuth === 'login' ? 'Entrar' : 'Criar conta'}
+              </button>
+              {erroAuth && <p className="status alerta">{erroAuth}</p>}
+              <p className="auth-hint">Opcional — em breve valerá pontuação (Elo) nas partidas online.</p>
+            </div>
+          )}
+
           <div className="modos">
             {MODOS.map((m) => (
               <button key={m.id} className={`card-modo${modo === m.id ? ' ativo' : ''}`} onClick={() => setModo(m.id)}>
