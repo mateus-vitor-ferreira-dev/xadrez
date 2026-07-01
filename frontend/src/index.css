@@ -509,14 +509,64 @@ button.primario:hover:not(:disabled) {
 /* ---------- Barra superior (toggles) ---------- */
 .barra-topo {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin-bottom: 4px;
+  min-height: 34px;
+}
+.barra-topo .usuario-area,
+.barra-topo .toggles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.usuario-logado {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
 }
 .toggle {
   padding: 6px 12px;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1;
+}
+
+/* card de autenticação (lobby) */
+.auth-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(320px, 90vw);
+  margin: 0 auto 20px;
+  padding: 18px;
+  border: 1px solid var(--surface-line);
+  border-radius: 14px;
+  background: var(--surface);
+  animation: surgir 0.6s ease both;
+}
+.auth-tabs {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.auth-card input {
+  padding: 9px 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--surface-line);
+  border-radius: 8px;
+}
+[data-tema='claro'] .auth-card input {
+  background: rgba(255, 255, 255, 0.6);
+}
+.auth-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 2px 0 0;
 }
 
 /* ---------- Layout da tela de jogo ---------- */

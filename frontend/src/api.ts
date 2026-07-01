@@ -1,6 +1,4 @@
 // Camada de acesso à API do xadrez (backend Spring).
-// Os TIPOS aqui espelham o contrato do backend (EstadoPartidaResponse).
-// Tipar isso é o ganho de TypeScript: se o back mudar um campo, o TS reclama aqui.
 
 export type Cor = 'BRANCO' | 'PRETO'
 
@@ -10,64 +8,89 @@ export interface EstadoPartida {
   xeque: boolean
   xequeMate: boolean
   afogamento: boolean
-  /** 64 caracteres: 1 por casa (linha 0→7, coluna 0→7). Maiúscula=branca, minúscula=preta, '.'=vazia. */
+  /** 64 caracteres: 1 por casa. Maiúscula=branca, minúscula=preta, '.'=vazia. */
   tabuleiro: string
 }
 
-// Em PRODUÇÃO, VITE_API_URL aponta para o backend na Railway (definido na Vercel).
-// No DESENVOLVIMENTO ela fica vazia, e o "/partidas" cai no proxy do Vite -> 8080.
+export type TipoPromocao = 'RAINHA' | 'TORRE' | 'BISPO' | 'CAVALO'
+
+/** Dados devolvidos por cadastro/login. */
+export interface Autenticacao {
+  token: string
+  usuario: string
+  elo: number
+}
+
+// Em produção VITE_API_URL aponta para o backend; em dev fica vazio (proxy do Vite).
 const API = import.meta.env.VITE_API_URL ?? ''
 const BASE = `${API}/partidas`
 
-/** Lê a resposta como JSON ou lança um erro com a mensagem do backend ({ "erro": ... }). */
+/** Token JWT atual (guardado em localStorage sob a chave "auth"). */
+function tokenAtual(): string | null {
+  try {
+    return (JSON.parse(localStorage.getItem('auth') ?? 'null') as Autenticacao | null)?.token ?? null
+  } catch {
+    return null
+  }
+}
+
+/** Cabeçalhos com o Bearer token, se houver login. */
+function comAuth(extra?: Record<string, string>): Record<string, string> {
+  const h: Record<string, string> = { ...extra }
+  const t = tokenAtual()
+  if (t) h.Authorization = `Bearer ${t}`
+  return h
+}
+
 async function lerOuFalhar(resposta: Response): Promise<EstadoPartida> {
   if (!resposta.ok) {
     const corpo = await resposta.json().catch(() => null)
-    throw new Error(corpo?.erro ?? `Erro ${resposta.status}`)
+    throw new Error(corpo?.erro ?? corpo?.message ?? `Erro ${resposta.status}`)
   }
   return resposta.json() as Promise<EstadoPartida>
 }
 
-/** POST /partidas — cria uma partida nova. */
+// ---------- Partidas ----------
 export async function novaPartida(): Promise<EstadoPartida> {
-  return lerOuFalhar(await fetch(BASE, { method: 'POST' }))
+  return lerOuFalhar(await fetch(BASE, { method: 'POST', headers: comAuth() }))
 }
 
-/** GET /partidas/{id} — estado atual de uma partida. */
 export async function buscarPartida(id: number): Promise<EstadoPartida> {
-  return lerOuFalhar(await fetch(`${BASE}/${id}`))
+  return lerOuFalhar(await fetch(`${BASE}/${id}`, { headers: comAuth() }))
 }
 
-/** POST /partidas/{id}/jogada-ia?nivel=N — a IA joga pelo jogador da vez. */
 export async function jogadaIA(id: number, nivel: number): Promise<EstadoPartida> {
-  const resposta = await fetch(`${BASE}/${id}/jogada-ia?nivel=${nivel}`, { method: 'POST' })
-  return lerOuFalhar(resposta)
+  return lerOuFalhar(await fetch(`${BASE}/${id}/jogada-ia?nivel=${nivel}`, { method: 'POST', headers: comAuth() }))
 }
 
-/** GET /partidas/{id}/movimentos?origem=e2 — casas de destino legais (ex.: ["e3","e4"]). */
 export async function buscarMovimentos(id: number, origem: string): Promise<string[]> {
-  const resposta = await fetch(`${BASE}/${id}/movimentos?origem=${origem}`)
+  const resposta = await fetch(`${BASE}/${id}/movimentos?origem=${origem}`, { headers: comAuth() })
   if (!resposta.ok) return []
   return resposta.json() as Promise<string[]>
 }
 
-/** Peça escolhida na promoção (precisa bater com o enum do backend). */
-export type TipoPromocao = 'RAINHA' | 'TORRE' | 'BISPO' | 'CAVALO'
-
-/**
- * POST /partidas/{id}/jogadas — aplica uma jogada. 'promocao' é opcional;
- * só importa quando um peão chega à última fileira (default no backend: RAINHA).
- */
-export async function jogar(
-  id: number,
-  origem: string,
-  destino: string,
-  promocao?: TipoPromocao,
-): Promise<EstadoPartida> {
+export async function jogar(id: number, origem: string, destino: string, promocao?: TipoPromocao): Promise<EstadoPartida> {
   const resposta = await fetch(`${BASE}/${id}/jogadas`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ origem, destino, promocao }), // promocao undefined some do JSON
+    headers: comAuth({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ origem, destino, promocao }),
   })
   return lerOuFalhar(resposta)
 }
+
+// ---------- Autenticação ----------
+async function autenticar(caminho: 'register' | 'login', usuario: string, senha: string): Promise<Autenticacao> {
+  const resposta = await fetch(`${API}/auth/${caminho}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usuario, senha }),
+  })
+  if (!resposta.ok) {
+    const corpo = await resposta.json().catch(() => null)
+    throw new Error(corpo?.message ?? (resposta.status === 409 ? 'Usuário já existe.' : 'Falha na autenticação.'))
+  }
+  return resposta.json() as Promise<Autenticacao>
+}
+
+export const registrar = (usuario: string, senha: string) => autenticar('register', usuario, senha)
+export const login = (usuario: string, senha: string) => autenticar('login', usuario, senha)
