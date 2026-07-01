@@ -81,6 +81,33 @@ public class PartidaService {
         return montar(entity, partida);
     }
 
+    /**
+     * LOBBY: lista as salas abertas (partidas online aguardando oponente),
+     * filtrando por faixa de Elo e escondendo as do próprio jogador (não faz
+     * sentido entrar na sua própria sala). Só entram salas de um criador logado
+     * e com Elo conhecido — é o que permite ranquear e comparar níveis.
+     *
+     * @param excetoUsuario apelido de quem consulta (para pular as próprias salas); pode ser null
+     * @param eloMin        Elo mínimo do criador (null = sem piso)
+     * @param eloMax        Elo máximo do criador (null = sem teto)
+     */
+    public List<PartidaAberta> partidasAbertas(String excetoUsuario, Integer eloMin, Integer eloMax) {
+        return repository.findByOnlineTrueAndPretoUsuarioIsNullAndResultadoOrderByIdDesc(Resultado.EM_ANDAMENTO)
+                .stream()
+                // pula salas anônimas e as do próprio jogador
+                .filter(e -> e.getBrancoUsuario() != null && !e.getBrancoUsuario().equals(excetoUsuario))
+                // busca o criador; flatMap com Optional.stream() descarta quem não existe mais
+                .flatMap(e -> usuarios.findByUsuario(e.getBrancoUsuario()).stream()
+                        .filter(u -> dentroDaFaixa(u.getElo(), eloMin, eloMax))
+                        .map(u -> new PartidaAberta(e.getId(), e.getBrancoUsuario(), u.getElo())))
+                .toList();
+    }
+
+    /** true se {@code elo} está dentro de [eloMin, eloMax] (limites null = abertos). */
+    private boolean dentroDaFaixa(int elo, Integer eloMin, Integer eloMax) {
+        return (eloMin == null || elo >= eloMin) && (eloMax == null || elo <= eloMax);
+    }
+
     /** Carrega o estado atual de uma partida pelo id. */
     public ResultadoPartida verPartida(Long id) {
         PartidaEntity entity = buscar(id);

@@ -80,6 +80,27 @@ export async function buscarPartida(id: number): Promise<EstadoPartida> {
   return lerOuFalhar(await fetch(`${BASE}/${id}`, { headers: comAuth() }))
 }
 
+/** Uma sala aberta do lobby: alguém esperando oponente (o criador joga de brancas). */
+export interface PartidaAberta {
+  id: number
+  criador: string
+  elo: number
+}
+
+/**
+ * Lista as salas abertas (lobby), opcionalmente filtrando pela faixa de Elo do
+ * criador. Passa o token para o back esconder as suas próprias salas.
+ */
+export async function listarPartidasAbertas(eloMin?: number, eloMax?: number): Promise<PartidaAberta[]> {
+  const q = new URLSearchParams()
+  if (eloMin != null) q.set('eloMin', String(eloMin))
+  if (eloMax != null) q.set('eloMax', String(eloMax))
+  const sufixo = q.toString() ? `?${q}` : ''
+  const resposta = await fetch(`${BASE}/abertas${sufixo}`, { headers: comAuth() })
+  if (!resposta.ok) throw new Error(`Erro ${resposta.status}`)
+  return resposta.json() as Promise<PartidaAberta[]>
+}
+
 export async function jogadaIA(id: number, nivel: number): Promise<EstadoPartida> {
   return lerOuFalhar(await fetch(`${BASE}/${id}/jogada-ia?nivel=${nivel}`, { method: 'POST', headers: comAuth() }))
 }

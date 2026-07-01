@@ -6,6 +6,7 @@ import './index.css'
 import App from './App.tsx'
 import PaginaAuth from './PaginaAuth.tsx'
 import PaginaApelido from './PaginaApelido.tsx'
+import PaginaLobby from './PaginaLobby.tsx'
 import { AuthProvider } from './auth.tsx'
 
 // O QueryClient é o "cérebro" do TanStack Query: guarda o cache das respostas,
@@ -29,6 +30,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/login" element={<PaginaAuth modo="login" />} />
             <Route path="/registro" element={<PaginaAuth modo="registro" />} />
             <Route path="/apelido" element={<PaginaApelido />} />
+            <Route path="/lobby" element={<PaginaLobby />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
