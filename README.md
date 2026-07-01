@@ -80,3 +80,7 @@ mvn test
 ## Deploy
 
 Instruções de produção (Vercel + Railway + PostgreSQL) em [`DEPLOY.md`](DEPLOY.md).
+
+## Créditos
+
+- Peças de xadrez (SVG): conjunto **cburnett**, por Colin M. L. Burnett (Wikimedia Commons), sob licença livre (GFDL/BSD/GPL).

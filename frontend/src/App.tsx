@@ -13,11 +13,12 @@ import {
 } from './api'
 import Tabuleiro from './Tabuleiro'
 
-const GLIFO_PROMOCAO: Record<TipoPromocao, string> = {
-  RAINHA: '♛',
-  TORRE: '♜',
-  BISPO: '♝',
-  CAVALO: '♞',
+// Letra do nosso código para cada tipo de promoção (para achar o SVG da peça).
+const LETRA_PROMOCAO: Record<TipoPromocao, string> = {
+  RAINHA: 'd',
+  TORRE: 't',
+  BISPO: 'b',
+  CAVALO: 'c',
 }
 
 type Modo = 'humano' | 'ia'
@@ -300,9 +301,13 @@ function App() {
             <div className="modal-promocao">
               <p>Promover para:</p>
               <div className="opcoes">
-                {(Object.keys(GLIFO_PROMOCAO) as TipoPromocao[]).map((tipo) => (
+                {(Object.keys(LETRA_PROMOCAO) as TipoPromocao[]).map((tipo) => (
                   <button key={tipo} onClick={() => escolherPromocao(tipo)} title={tipo}>
-                    {GLIFO_PROMOCAO[tipo]}
+                    <img
+                      className="peca-opcao"
+                      src={`/pecas/${estado.vez === 'BRANCO' ? 'w' : 'b'}${LETRA_PROMOCAO[tipo]}.svg`}
+                      alt={tipo}
+                    />
                   </button>
                 ))}
               </div>

@@ -233,19 +233,24 @@ button.primario:hover:not(:disabled) {
   background: var(--wood-dark);
 }
 
-/* peças com leve relevo */
-.peca {
-  position: relative;
+/* peças (SVG) — o wrapper ocupa a casa inteira (facilita a animação de deslize) */
+.peca-wrap {
+  position: absolute;
+  inset: 0;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.peca.branca {
-  color: #f7f0e1;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
-  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.38));
+.peca {
+  width: 92%;
+  height: 92%;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.42));
+  pointer-events: none;
 }
-.peca.preta {
-  color: #241a12;
-  filter: drop-shadow(0 2px 1px rgba(255, 255, 255, 0.12));
+/* deslize: a peça escorrega da origem até o destino (100% = uma casa) */
+.peca-wrap.desliza {
+  animation: deslizar 0.24s ease;
 }
 
 /* destaques */
@@ -263,7 +268,7 @@ button.primario:hover:not(:disabled) {
 /* marcadores de lance legal */
 .marcador {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   width: 30%;
   height: 30%;
   border-radius: 50%;
@@ -327,12 +332,16 @@ button.primario:hover:not(:disabled) {
   gap: 10px;
 }
 .modal-promocao .opcoes button {
-  font-size: 30px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 60px;
   height: 60px;
-  color: var(--gold);
   padding: 0;
+}
+.modal-promocao .opcoes .peca-opcao {
+  width: 42px;
+  height: 42px;
 }
 
 .online-info {
@@ -377,6 +386,14 @@ button.primario:hover:not(:disabled) {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+@keyframes deslizar {
+  from {
+    transform: translate(calc(var(--dx, 0) * 100%), calc(var(--dy, 0) * 100%));
+  }
+  to {
+    transform: translate(0, 0);
   }
 }
 @keyframes pulsoXeque {
