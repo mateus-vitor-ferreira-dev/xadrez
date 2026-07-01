@@ -1,6 +1,7 @@
 package com.mateusferreira.xadrez.persistencia;
 
 import com.mateusferreira.xadrez.dominio.Cor;
+import com.mateusferreira.xadrez.dominio.Resultado;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -51,6 +52,35 @@ public class PartidaEntity {
     @Column(length = 2)
     private String enPassant;
 
+    // ----- Campos de PARTIDA ONLINE / ELO (Fase 4) -----
+
+    /** true se é uma partida online (única que pontua Elo). */
+    @Column(nullable = false)
+    private boolean online = false;
+
+    /** Username de quem joga de brancas (null se anônimo/local). */
+    @Column(length = 30)
+    private String brancoUsuario;
+
+    /** Username de quem joga de pretas (null enquanto ninguém entrou). */
+    @Column(length = 30)
+    private String pretoUsuario;
+
+    /** Desfecho da partida. Começa EM_ANDAMENTO. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private Resultado resultado = Resultado.EM_ANDAMENTO;
+
+    /** Trava para aplicar o Elo UMA única vez, mesmo se a partida recarregar. */
+    @Column(nullable = false)
+    private boolean eloAplicado = false;
+
+    /** Variação de Elo das brancas nesta partida (null enquanto não aplicado). */
+    private Integer deltaBranco;
+
+    /** Variação de Elo das pretas nesta partida (null enquanto não aplicado). */
+    private Integer deltaPreto;
+
     /**
      * Construtor SEM argumentos exigido pela JPA: o Hibernate cria o objeto
      * "vazio" via reflexão e depois preenche os campos. Fica 'protected' para
@@ -100,5 +130,61 @@ public class PartidaEntity {
 
     public void setEnPassant(String enPassant) {
         this.enPassant = enPassant;
+    }
+
+    public boolean isOnline() {
+        return online;
+    }
+
+    public void setOnline(boolean online) {
+        this.online = online;
+    }
+
+    public String getBrancoUsuario() {
+        return brancoUsuario;
+    }
+
+    public void setBrancoUsuario(String brancoUsuario) {
+        this.brancoUsuario = brancoUsuario;
+    }
+
+    public String getPretoUsuario() {
+        return pretoUsuario;
+    }
+
+    public void setPretoUsuario(String pretoUsuario) {
+        this.pretoUsuario = pretoUsuario;
+    }
+
+    public Resultado getResultado() {
+        return resultado;
+    }
+
+    public void setResultado(Resultado resultado) {
+        this.resultado = resultado;
+    }
+
+    public boolean isEloAplicado() {
+        return eloAplicado;
+    }
+
+    public void setEloAplicado(boolean eloAplicado) {
+        this.eloAplicado = eloAplicado;
+    }
+
+    public Integer getDeltaBranco() {
+        return deltaBranco;
+    }
+
+    public void setDeltaBranco(Integer deltaBranco) {
+        this.deltaBranco = deltaBranco;
+    }
+
+    public Integer getDeltaPreto() {
+        return deltaPreto;
+    }
+
+    public void setDeltaPreto(Integer deltaPreto) {
+        this.deltaPreto = deltaPreto;
     }
 }
