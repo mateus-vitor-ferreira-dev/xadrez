@@ -7,20 +7,25 @@ interface Props {
   casaXeque: string | null
   ultimoLance: { origem: string; destino: string } | null
   onClicarCasa: (notacao: string) => void
+  /** true = perspectiva das pretas (tabuleiro girado). */
+  girar?: boolean
 }
 
-/** Caminho do SVG da peça a partir do caractere serializado (ex.: 'T' -> /pecas/wt.svg). */
 function arquivoDaPeca(caractere: string): string {
-  const cor = caractere === caractere.toUpperCase() ? 'w' : 'b' // maiúscula = branca
-  const tipo = caractere.toLowerCase() // t,c,b,d,r,p
+  const cor = caractere === caractere.toUpperCase() ? 'w' : 'b'
+  const tipo = caractere.toLowerCase()
   return `/pecas/${cor}${tipo}.svg`
 }
 
-function Tabuleiro({ tabuleiro, selecionada, destaques, casaXeque, ultimoLance, onClicarCasa }: Props) {
+function Tabuleiro({ tabuleiro, selecionada, destaques, casaXeque, ultimoLance, onClicarCasa, girar = false }: Props) {
   const casas = []
 
-  for (let linha = 7; linha >= 0; linha--) {
-    for (let coluna = 0; coluna < 8; coluna++) {
+  // Ordem de varredura: normal (brancas embaixo) ou girada (pretas embaixo).
+  const linhas = girar ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0]
+  const colunas = girar ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7]
+
+  for (const linha of linhas) {
+    for (const coluna of colunas) {
       const caractere = tabuleiro[linha * 8 + coluna]
       const vazia = caractere === '.'
       const corDaCasa = (linha + coluna) % 2 === 0 ? 'escura' : 'clara'
@@ -34,8 +39,6 @@ function Tabuleiro({ tabuleiro, selecionada, destaques, casaXeque, ultimoLance, 
       if (notacao === selecionada) classe += ' selecionada'
       if (notacao === casaXeque) classe += ' em-xeque'
 
-      // Animação de deslize: a peça que chegou ao destino do último lance
-      // "escorrega" da casa de origem até aqui.
       let deslize = false
       let estiloDeslize: CSSProperties | undefined
       if (!vazia && ultimoLance && notacao === ultimoLance.destino) {
@@ -43,8 +46,9 @@ function Tabuleiro({ tabuleiro, selecionada, destaques, casaXeque, ultimoLance, 
         const dCol = ultimoLance.destino.charCodeAt(0) - 97
         const oRank = Number(ultimoLance.origem[1])
         const dRank = Number(ultimoLance.destino[1])
+        const sinal = girar ? -1 : 1 // ao girar, o deslize inverte nos dois eixos
         deslize = true
-        estiloDeslize = { '--dx': oCol - dCol, '--dy': dRank - oRank } as CSSProperties
+        estiloDeslize = { '--dx': (oCol - dCol) * sinal, '--dy': (dRank - oRank) * sinal } as CSSProperties
       }
 
       casas.push(
