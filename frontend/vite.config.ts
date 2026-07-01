@@ -11,6 +11,7 @@ export default defineConfig({
     // Em produção isso se resolve de outra forma (mesmo domínio ou CORS no back).
     proxy: {
       '/partidas': 'http://localhost:8080',
+      '/auth': 'http://localhost:8080',
     },
   },
 })
