@@ -1,8 +1,12 @@
 package com.mateusferreira.xadrez.controller;
 
+import com.mateusferreira.xadrez.controller.dto.GoogleAuthResponse;
+import com.mateusferreira.xadrez.controller.dto.GoogleFinalizarRequest;
+import com.mateusferreira.xadrez.controller.dto.GoogleLoginRequest;
 import com.mateusferreira.xadrez.controller.dto.LoginRequest;
 import com.mateusferreira.xadrez.controller.dto.RegistroRequest;
 import com.mateusferreira.xadrez.controller.dto.TokenResponse;
+import com.mateusferreira.xadrez.seguranca.GoogleTokenVerifier;
 import com.mateusferreira.xadrez.seguranca.JwtService;
 import com.mateusferreira.xadrez.seguranca.Usuario;
 import com.mateusferreira.xadrez.seguranca.UsuarioRepository;
@@ -17,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
@@ -38,13 +43,16 @@ public class AuthController {
     private final PasswordEncoder encoder;
     private final AuthenticationManager authManager;
     private final JwtService jwtService;
+    private final GoogleTokenVerifier googleVerifier;
 
     public AuthController(UsuarioRepository repository, PasswordEncoder encoder,
-                          AuthenticationManager authManager, JwtService jwtService) {
+                          AuthenticationManager authManager, JwtService jwtService,
+                          GoogleTokenVerifier googleVerifier) {
         this.repository = repository;
         this.encoder = encoder;
         this.authManager = authManager;
         this.jwtService = jwtService;
+        this.googleVerifier = googleVerifier;
     }
 
     /** POST /auth/register — cria a conta (senha guardada como hash) e já devolve o token. */
@@ -86,6 +94,54 @@ public class AuthController {
                 .or(() -> repository.findByEmail(identificador.toLowerCase()))
                 .orElseThrow();
         return tokenPara(u);
+    }
+
+    /**
+     * POST /auth/google — valida o ID token do Google. Se já existe conta com o
+     * e-mail, faz login; se é o 1º acesso, devolve {@code novo=true} + uma
+     * sugestão de apelido, e o front chama /auth/google/finalizar.
+     */
+    @PostMapping("/google")
+    public GoogleAuthResponse google(@RequestBody GoogleLoginRequest req) {
+        GoogleTokenVerifier.GoogleUser gu = googleVerifier.verificar(req.credential());
+        String email = gu.email().toLowerCase();
+        return repository.findByEmail(email)
+                .map(u -> new GoogleAuthResponse(false, tokenPara(u), null, null))
+                .orElseGet(() -> new GoogleAuthResponse(true, null, email, sugerirApelido(gu)));
+    }
+
+    /**
+     * POST /auth/google/finalizar — cria a conta do 1º acesso via Google, com o
+     * apelido escolhido. Revalida o credential (não confia só no front).
+     */
+    @PostMapping("/google/finalizar")
+    public TokenResponse googleFinalizar(@RequestBody GoogleFinalizarRequest req) {
+        GoogleTokenVerifier.GoogleUser gu = googleVerifier.verificar(req.credential());
+        String email = gu.email().toLowerCase();
+        // Se a conta já existe (ex.: finalizou noutra aba), apenas devolve o token.
+        var existente = repository.findByEmail(email);
+        if (existente.isPresent()) {
+            return tokenPara(existente.get());
+        }
+        String apelido = req.apelido() == null ? "" : req.apelido().trim();
+        if (apelido.length() < 3 || apelido.length() > 30) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O apelido deve ter de 3 a 30 caracteres.");
+        }
+        if (repository.existsByUsuario(apelido)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Esse apelido já está em uso.");
+        }
+        // Conta via Google não tem senha utilizável: guardamos um hash aleatório.
+        Usuario novo = repository.save(new Usuario(apelido, email, encoder.encode(UUID.randomUUID().toString())));
+        return tokenPara(novo);
+    }
+
+    /** Sugestão de apelido a partir do e-mail (só sugestão; o usuário confirma). */
+    private String sugerirApelido(GoogleTokenVerifier.GoogleUser gu) {
+        String base = gu.email().split("@")[0].toLowerCase().replaceAll("[^a-z0-9_]", "");
+        if (base.length() < 3) {
+            base = "jogador";
+        }
+        return base.length() > 30 ? base.substring(0, 30) : base;
     }
 
     /** Monta o token + dados públicos do usuário. */
