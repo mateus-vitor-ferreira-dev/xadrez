@@ -13,14 +13,19 @@ import {
 } from './api'
 import Tabuleiro from './Tabuleiro'
 
-const GLIFO_PROMOCAO: Record<TipoPromocao, string> = {
-  RAINHA: '♛',
-  TORRE: '♜',
-  BISPO: '♝',
-  CAVALO: '♞',
+// Letra do nosso código para cada tipo de promoção (para achar o SVG da peça).
+const LETRA_PROMOCAO: Record<TipoPromocao, string> = {
+  RAINHA: 'd',
+  TORRE: 't',
+  BISPO: 'b',
+  CAVALO: 'c',
 }
 
 type Modo = 'humano' | 'ia'
+
+// Posição inicial (serializada) — usada como pré-visualização do tabuleiro
+// na tela inicial, antes de qualquer partida começar.
+const TABULEIRO_INICIAL = 'TCBDRBCTPPPPPPPP................................pppppppptcbdrbct'
 
 /** URL do WebSocket: deriva da API (https->wss) ou cai no backend local. */
 function wsUrl(): string {
@@ -188,7 +193,7 @@ function App() {
 
   function clicarCasa(notacao: string) {
     setErro(null)
-    if (promocaoPendente || vezDaIA || iaMutation.isPending || naoEhMinhaVez) return
+    if (!estado || promocaoPendente || vezDaIA || iaMutation.isPending || naoEhMinhaVez) return
     if (selecionada === null) {
       if (temPecaDaVez(notacao)) setSelecionada(notacao)
     } else if (selecionada === notacao) {
@@ -244,7 +249,7 @@ function App() {
             )}
           </div>
           <div className="config">
-            <button onClick={() => criar.mutate(false)} disabled={criar.isPending}>
+            <button className="primario" onClick={() => criar.mutate(false)} disabled={criar.isPending}>
               {criar.isPending ? 'Criando…' : 'Nova partida'}
             </button>
             <button onClick={() => criar.mutate(true)} disabled={criar.isPending}>
@@ -268,32 +273,41 @@ function App() {
       )}
 
       {estado && (
+        <p className="status">
+          Vez das <strong>{estado.vez}</strong>
+          {iaMutation.isPending && <span> — IA pensando…</span>}
+          {naoEhMinhaVez && !fimDeJogo(estado) && <span> — aguardando o oponente…</span>}
+          {!estado.xequeMate && estado.xeque && <span className="alerta"> — xeque!</span>}
+        </p>
+      )}
+
+      {/* O tabuleiro é sempre exibido — pré-visualização (posição inicial) antes de começar. */}
+      <div className={`tabuleiro-wrap${estado ? '' : ' preview'}`}>
+        <Tabuleiro
+          tabuleiro={estado?.tabuleiro ?? TABULEIRO_INICIAL}
+          selecionada={selecionada}
+          destaques={destaques}
+          casaXeque={casaDoReiEmXeque()}
+          ultimoLance={ultimoLance}
+          onClicarCasa={clicarCasa}
+        />
+      </div>
+
+      {estado && (
         <>
-          <p className="status">
-            Vez das <strong>{estado.vez}</strong>
-            {iaMutation.isPending && <span> — IA pensando…</span>}
-            {naoEhMinhaVez && !fimDeJogo(estado) && <span> — aguardando o oponente…</span>}
-            {!estado.xequeMate && estado.xeque && <span className="alerta"> — xeque!</span>}
-          </p>
-
-          <Tabuleiro
-            tabuleiro={estado.tabuleiro}
-            selecionada={selecionada}
-            destaques={destaques}
-            casaXeque={casaDoReiEmXeque()}
-            ultimoLance={ultimoLance}
-            onClicarCasa={clicarCasa}
-          />
-
           {erro && <p className="status alerta">{erro}</p>}
 
           {promocaoPendente && (
             <div className="modal-promocao">
               <p>Promover para:</p>
               <div className="opcoes">
-                {(Object.keys(GLIFO_PROMOCAO) as TipoPromocao[]).map((tipo) => (
+                {(Object.keys(LETRA_PROMOCAO) as TipoPromocao[]).map((tipo) => (
                   <button key={tipo} onClick={() => escolherPromocao(tipo)} title={tipo}>
-                    {GLIFO_PROMOCAO[tipo]}
+                    <img
+                      className="peca-opcao"
+                      src={`/pecas/${estado.vez === 'BRANCO' ? 'w' : 'b'}${LETRA_PROMOCAO[tipo]}.svg`}
+                      alt={tipo}
+                    />
                   </button>
                 ))}
               </div>

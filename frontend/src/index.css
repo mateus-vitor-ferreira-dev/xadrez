@@ -109,6 +109,17 @@ button.ativo {
   border-color: var(--gold);
   box-shadow: 0 6px 18px -6px rgba(230, 192, 103, 0.6);
 }
+/* CTA primário: chama a ação principal */
+button.primario {
+  color: #1c140c;
+  background: linear-gradient(180deg, #f3da90, var(--gold));
+  border-color: var(--gold);
+  box-shadow: 0 10px 26px -10px rgba(230, 192, 103, 0.7);
+}
+button.primario:hover:not(:disabled) {
+  color: #1c140c;
+  filter: brightness(1.05);
+}
 
 .config {
   display: flex;
@@ -150,6 +161,36 @@ button.ativo {
 }
 
 /* ---------- Tabuleiro ---------- */
+/* envolve o tabuleiro e cria um brilho dourado atrás (profundidade/drama) */
+.tabuleiro-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.tabuleiro-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -6% -6% 0;
+  z-index: 0;
+  background: radial-gradient(closest-side, rgba(230, 192, 103, 0.12), transparent 72%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+.tabuleiro-wrap .tabuleiro {
+  position: relative;
+  z-index: 1;
+}
+/* pré-visualização (antes de começar): levemente esmaecida e sem interação */
+.tabuleiro-wrap.preview .tabuleiro {
+  opacity: 0.9;
+}
+.tabuleiro-wrap.preview .casa {
+  cursor: default;
+}
+.tabuleiro-wrap.preview .casa:hover {
+  filter: none;
+}
+
 .tabuleiro {
   display: grid;
   grid-template-columns: repeat(8, clamp(38px, 10.6vw, 60px));
@@ -192,19 +233,24 @@ button.ativo {
   background: var(--wood-dark);
 }
 
-/* peças com leve relevo */
-.peca {
-  position: relative;
+/* peças (SVG) — o wrapper ocupa a casa inteira (facilita a animação de deslize) */
+.peca-wrap {
+  position: absolute;
+  inset: 0;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.peca.branca {
-  color: #f7f0e1;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
-  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.38));
+.peca {
+  width: 92%;
+  height: 92%;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.42));
+  pointer-events: none;
 }
-.peca.preta {
-  color: #241a12;
-  filter: drop-shadow(0 2px 1px rgba(255, 255, 255, 0.12));
+/* deslize: a peça escorrega da origem até o destino (100% = uma casa) */
+.peca-wrap.desliza {
+  animation: deslizar 0.24s ease;
 }
 
 /* destaques */
@@ -222,7 +268,7 @@ button.ativo {
 /* marcadores de lance legal */
 .marcador {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   width: 30%;
   height: 30%;
   border-radius: 50%;
@@ -286,12 +332,16 @@ button.ativo {
   gap: 10px;
 }
 .modal-promocao .opcoes button {
-  font-size: 30px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 60px;
   height: 60px;
-  color: var(--gold);
   padding: 0;
+}
+.modal-promocao .opcoes .peca-opcao {
+  width: 42px;
+  height: 42px;
 }
 
 .online-info {
@@ -336,6 +386,14 @@ button.ativo {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+@keyframes deslizar {
+  from {
+    transform: translate(calc(var(--dx, 0) * 100%), calc(var(--dy, 0) * 100%));
+  }
+  to {
+    transform: translate(0, 0);
   }
 }
 @keyframes pulsoXeque {
