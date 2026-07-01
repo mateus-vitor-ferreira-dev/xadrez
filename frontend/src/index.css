@@ -377,6 +377,110 @@ button.primario:hover:not(:disabled) {
   border-radius: 8px;
 }
 
+/* ---------- Lobby / navegação ---------- */
+.lobby,
+.jogo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.modos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  animation: surgir 0.6s ease 0.16s both;
+}
+.card-modo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 150px;
+  padding: 18px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--surface-line);
+  background: var(--surface);
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.card-modo:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+.card-modo.ativo {
+  /* mantém o fundo escuro (sobrescreve o preenchimento dourado do button.ativo)
+     e sinaliza a seleção só com o anel + brilho dourado */
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 10px 26px -12px rgba(230, 192, 103, 0.6);
+}
+.card-modo .icone {
+  font-size: 30px;
+  line-height: 1;
+}
+.card-modo .card-titulo {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--gold);
+}
+.card-modo .card-desc {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.niveis {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  color: var(--muted);
+}
+.primario.grande {
+  padding: 12px 30px;
+  font-size: 16px;
+}
+
+.entrar-link {
+  margin-top: 22px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.entrar-link .linha {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  justify-content: center;
+}
+.entrar-link input {
+  width: min(360px, 70vw);
+  padding: 9px 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--surface-line);
+  border-radius: 999px;
+}
+
+/* botão voltar (tela de jogo) */
+.voltar {
+  align-self: flex-start;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  border-color: transparent;
+  background: transparent;
+}
+.voltar:hover:not(:disabled) {
+  color: var(--gold);
+  border-color: var(--surface-line);
+}
+
 /* ---------- Animações ---------- */
 @keyframes surgir {
   from {
