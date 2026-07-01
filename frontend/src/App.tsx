@@ -16,6 +16,7 @@ import {
 import Tabuleiro from './Tabuleiro'
 import CarrosselModos from './CarrosselModos'
 import PecaModo from './PecaModo'
+import PerfilUsuario from './PerfilUsuario'
 import { useAuth } from './auth'
 import { type Modo } from './modos'
 import * as jogoCache from './jogoCache'
@@ -387,7 +388,7 @@ function App() {
         <div className="usuario-area">
           {auth ? (
             <>
-              <span className="usuario-logado">♟ {auth.usuario} · Elo {auth.elo}</span>
+              <PerfilUsuario usuario={auth.usuario} elo={auth.elo} />
               <button className="toggle" onClick={sair}>
                 Sair
               </button>
@@ -414,7 +415,7 @@ function App() {
       </div>
 
       <header className="topo">
-        <h1>♟ Xadrez</h1>
+        <h1>♞ Xadrez</h1>
         <p className="tagline">Local · contra a IA · online em tempo real</p>
       </header>
 
