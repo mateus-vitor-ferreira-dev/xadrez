@@ -325,13 +325,9 @@ function App() {
   /** Ação do botão principal do lobby — muda conforme o modo (e o login, no online). */
   function acaoPrincipal() {
     if (modo === 'online') {
-      // Jogar online exige conta. Sem login, vai para /login; com login, cria a
-      // partida online (futuramente: lobby de salas por Elo).
-      if (!auth) {
-        navigate('/login')
-        return
-      }
-      criar.mutate(true)
+      // Jogar online exige conta. Sem login, vai para /login; com login, abre o
+      // lobby de salas por Elo (onde dá para criar a sua ou entrar em uma).
+      navigate(auth ? '/lobby' : '/login')
       return
     }
     criar.mutate(false) // humano ou IA: sem login
@@ -463,8 +459,10 @@ function App() {
         </div>
       ) : (
         <div className="jogo">
-          <button className="voltar" onClick={voltar}>
-            ← Voltar ao início
+          {/* Num jogo online voltamos para o LOBBY (achar outro oponente); num
+              jogo local, para o menu inicial. */}
+          <button className="voltar" onClick={estado?.online ? () => navigate('/lobby') : voltar}>
+            {estado?.online ? '← Voltar às salas' : '← Voltar ao início'}
           </button>
 
           {minhaCor !== null && (
@@ -587,7 +585,9 @@ function App() {
                   </span>
                 </p>
               )}
-              <button onClick={voltar}>Voltar ao início</button>
+              <button onClick={estado.online ? () => navigate('/lobby') : voltar}>
+                {estado.online ? 'Voltar às salas' : 'Voltar ao início'}
+              </button>
             </div>
           )}
         </div>
