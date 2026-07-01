@@ -32,6 +32,7 @@ export type TipoPromocao = 'RAINHA' | 'TORRE' | 'BISPO' | 'CAVALO'
 export interface Autenticacao {
   token: string
   usuario: string
+  email: string
   elo: number
 }
 
@@ -99,18 +100,60 @@ export async function jogar(id: number, origem: string, destino: string, promoca
 }
 
 // ---------- Autenticação ----------
-async function autenticar(caminho: 'register' | 'login', usuario: string, senha: string): Promise<Autenticacao> {
+async function postAuth(caminho: 'register' | 'login', corpo: object): Promise<Autenticacao> {
   const resposta = await fetch(`${API}/auth/${caminho}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ usuario, senha }),
+    body: JSON.stringify(corpo),
   })
   if (!resposta.ok) {
-    const corpo = await resposta.json().catch(() => null)
-    throw new Error(corpo?.message ?? (resposta.status === 409 ? 'Usuário já existe.' : 'Falha na autenticação.'))
+    const erro = await resposta.json().catch(() => null)
+    throw new Error(erro?.message ?? (resposta.status === 409 ? 'Apelido ou e-mail já cadastrado.' : 'Falha na autenticação.'))
   }
   return resposta.json() as Promise<Autenticacao>
 }
 
-export const registrar = (usuario: string, senha: string) => autenticar('register', usuario, senha)
-export const login = (usuario: string, senha: string) => autenticar('login', usuario, senha)
+/** Cadastro: apelido (único), e-mail (único) e senha. */
+export const registrar = (usuario: string, email: string, senha: string) =>
+  postAuth('register', { usuario, email, senha })
+
+/** Login: identificador = e-mail OU apelido, + senha. */
+export const login = (identificador: string, senha: string) =>
+  postAuth('login', { identificador, senha })
+
+// ---------- Login com Google ----------
+/** Resposta do /auth/google: ou já loga (sessao), ou pede apelido (novo). */
+export interface GoogleAuthResp {
+  novo: boolean
+  sessao: Autenticacao | null
+  email: string | null
+  sugestaoApelido: string | null
+}
+
+/** Manda o ID token do Google; back diz se já existe conta ou é 1º acesso. */
+export async function googleLogin(credential: string): Promise<GoogleAuthResp> {
+  const resposta = await fetch(`${API}/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential }),
+  })
+  if (!resposta.ok) {
+    const erro = await resposta.json().catch(() => null)
+    throw new Error(erro?.message ?? 'Falha no login com Google.')
+  }
+  return resposta.json() as Promise<GoogleAuthResp>
+}
+
+/** 1º acesso via Google: cria a conta com o apelido escolhido e devolve a sessão. */
+export async function googleFinalizar(credential: string, apelido: string): Promise<Autenticacao> {
+  const resposta = await fetch(`${API}/auth/google/finalizar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential, apelido }),
+  })
+  if (!resposta.ok) {
+    const erro = await resposta.json().catch(() => null)
+    throw new Error(erro?.message ?? (resposta.status === 409 ? 'Esse apelido já está em uso.' : 'Falha ao finalizar o cadastro.'))
+  }
+  return resposta.json() as Promise<Autenticacao>
+}

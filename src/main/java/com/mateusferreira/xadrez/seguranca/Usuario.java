@@ -19,8 +19,13 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Apelido público e único (aparece nas partidas / ranking). */
     @Column(nullable = false, unique = true, length = 30)
     private String usuario;
+
+    /** E-mail único — serve para login (junto com o apelido) e contato. */
+    @Column(nullable = false, unique = true, length = 120)
+    private String email;
 
     /** Hash BCrypt da senha (nunca a senha em texto puro). */
     @Column(nullable = false)
@@ -32,8 +37,9 @@ public class Usuario {
     protected Usuario() {
     }
 
-    public Usuario(String usuario, String senhaHash) {
+    public Usuario(String usuario, String email, String senhaHash) {
         this.usuario = usuario;
+        this.email = email;
         this.senha = senhaHash;
         this.elo = 1200;
     }
@@ -44,6 +50,10 @@ public class Usuario {
 
     public String getUsuario() {
         return usuario;
+    }
+
+    public String getEmail() {
+        return email;
     }
 
     public String getSenha() {

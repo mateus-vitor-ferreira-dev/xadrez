@@ -31,8 +31,8 @@ class PartidaServiceEloTest {
     @Test
     void partidaOnline_aplicaEloAoTerminar() {
         // Dois jogadores começam com o mesmo rating padrão (1200).
-        usuarios.save(new Usuario("branco_teste", "hash"));
-        usuarios.save(new Usuario("preto_teste", "hash"));
+        usuarios.save(new Usuario("branco_teste", "branco@teste.com", "hash"));
+        usuarios.save(new Usuario("preto_teste", "preto@teste.com", "hash"));
 
         Long id = service.novaPartida(true, "branco_teste").id(); // criador = brancas
         service.entrar(id, "preto_teste"); // adversário = pretas
@@ -54,7 +54,7 @@ class PartidaServiceEloTest {
 
     @Test
     void partidaContraIA_naoMexeNoElo() {
-        usuarios.save(new Usuario("solo_teste", "hash"));
+        usuarios.save(new Usuario("solo_teste", "solo@teste.com", "hash"));
         int antes = usuarios.findByUsuario("solo_teste").orElseThrow().getElo();
 
         // Partida LOCAL (não-online): mesmo terminando, não pontua.
