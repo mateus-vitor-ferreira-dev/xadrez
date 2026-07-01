@@ -13,7 +13,6 @@ import {
 } from './api'
 import Tabuleiro from './Tabuleiro'
 
-// Letra do nosso código para cada tipo de promoção (para achar o SVG da peça).
 const LETRA_PROMOCAO: Record<TipoPromocao, string> = {
   RAINHA: 'd',
   TORRE: 't',
@@ -21,19 +20,21 @@ const LETRA_PROMOCAO: Record<TipoPromocao, string> = {
   CAVALO: 'c',
 }
 
-type Modo = 'humano' | 'ia'
-
-// Posição inicial (serializada) — usada como pré-visualização do tabuleiro
-// na tela inicial, antes de qualquer partida começar.
 const TABULEIRO_INICIAL = 'TCBDRBCTPPPPPPPP................................pppppppptcbdrbct'
 
-/** URL do WebSocket: deriva da API (https->wss) ou cai no backend local. */
+type Modo = 'humano' | 'ia' | 'online'
+
+const MODOS: { id: Modo; icone: string; titulo: string; desc: string }[] = [
+  { id: 'humano', icone: '👥', titulo: '2 jogadores', desc: 'No mesmo dispositivo' },
+  { id: 'ia', icone: '🤖', titulo: 'Contra a IA', desc: 'Escolha o nível' },
+  { id: 'online', icone: '🌐', titulo: 'Online', desc: 'Por link, em tempo real' },
+]
+
 function wsUrl(): string {
   const api = import.meta.env.VITE_API_URL
   return api ? `${api.replace(/^http/, 'ws')}/ws` : 'ws://localhost:8080/ws'
 }
 
-/** Descobre o lance (origem/destino) comparando o tabuleiro antes e depois. */
 function diffLance(antes: string, depois: string): { origem: string; destino: string } | null {
   let origem = -1
   let destino = -1
@@ -57,9 +58,9 @@ function App() {
   const [erro, setErro] = useState<string | null>(null)
   const [modo, setModo] = useState<Modo>('humano')
   const [nivel, setNivel] = useState(2)
-  // Online: a cor que ESTE cliente controla (null = jogo local).
   const [minhaCor, setMinhaCor] = useState<Cor | null>(null)
   const [conectado, setConectado] = useState(false)
+  const [linkEntrada, setLinkEntrada] = useState('')
 
   const partida = useQuery({
     queryKey: ['partida', idPartida],
@@ -77,7 +78,6 @@ function App() {
 
   const fimDeJogo = (e?: EstadoPartida) => !!e && (e.xequeMate || e.afogamento)
 
-  // --- Ao abrir com ?partida=ID na URL, entra na partida online ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const pid = params.get('partida')
@@ -87,11 +87,10 @@ function App() {
     }
   }, [])
 
-  // --- Conexão WebSocket (STOMP): recebe os lances em tempo real ---
+  // WebSocket (STOMP): recebe os lances em tempo real (só no modo online).
   const clienteRef = useRef<Client | null>(null)
   useEffect(() => {
     if (idPartida === null || minhaCor === null) return
-
     const cliente = new Client({
       brokerURL: wsUrl(),
       reconnectDelay: 3000,
@@ -116,7 +115,6 @@ function App() {
     }
   }, [idPartida, minhaCor, queryClient])
 
-  // --- Mutações ---
   const iaMutation = useMutation({
     mutationFn: () => jogadaIA(idPartida!, nivel),
     onSuccess: (depois) => {
@@ -152,7 +150,6 @@ function App() {
       queryClient.setQueryData(['partida', idPartida], e)
       setUltimoLance({ origem: vars.origem, destino: vars.destino })
       setErro(null)
-      // No modo vs IA (local), a IA responde pelas pretas.
       if (modo === 'ia' && minhaCor === null && e.vez === 'PRETO' && !fimDeJogo(e)) {
         iaMutation.mutate()
       }
@@ -160,7 +157,6 @@ function App() {
     onError: (e) => setErro(e instanceof Error ? e.message : 'Jogada inválida'),
   })
 
-  // --- Helpers ---
   function pecaEm(notacao: string): string {
     if (!estado) return '.'
     const coluna = notacao.charCodeAt(0) - 97
@@ -188,7 +184,6 @@ function App() {
   }
 
   const vezDaIA = modo === 'ia' && minhaCor === null && estado?.vez === 'PRETO'
-  // No online, só posso agir na minha vez.
   const naoEhMinhaVez = minhaCor !== null && estado?.vez !== minhaCor
 
   function clicarCasa(notacao: string) {
@@ -216,88 +211,151 @@ function App() {
     setPromocaoPendente(null)
   }
 
+  /** Volta para a tela inicial (encerra a partida atual localmente). */
+  function voltar() {
+    setIdPartida(null)
+    setMinhaCor(null)
+    setSelecionada(null)
+    setUltimoLance(null)
+    setPromocaoPendente(null)
+    setErro(null)
+    window.history.replaceState(null, '', window.location.pathname)
+  }
+
+  /** Entra numa partida online a partir de um link colado (aceita URL, query ou id). */
+  function entrarPorLink() {
+    const txt = linkEntrada.trim()
+    const m = txt.match(/partida=(\d+)/)
+    const pid = m ? m[1] : /^\d+$/.test(txt) ? txt : null
+    if (!pid) {
+      setErro('Cole um link válido de partida online (ou o número da partida).')
+      return
+    }
+    const cor: Cor = /cor=branco/.test(txt) ? 'BRANCO' : 'PRETO'
+    setIdPartida(Number(pid))
+    setMinhaCor(cor)
+    window.history.replaceState(null, '', `?partida=${pid}&cor=${cor === 'BRANCO' ? 'branco' : 'preto'}`)
+    setLinkEntrada('')
+    setErro(null)
+  }
+
   const linkConvite =
     idPartida && minhaCor === 'BRANCO'
       ? `${window.location.origin}${window.location.pathname}?partida=${idPartida}&cor=preto`
       : null
 
+  const emJogo = idPartida !== null
+
   return (
     <div className="app">
-      <h1>♟ Xadrez</h1>
-      <p className="tagline">Local · contra a IA · online em tempo real</p>
+      <header className="topo">
+        <h1>♟ Xadrez</h1>
+        <p className="tagline">Local · contra a IA · online em tempo real</p>
+      </header>
 
-      {/* Controles: local (modo/IA) ou info da partida online */}
-      {minhaCor === null ? (
-        <>
-          <div className="config">
-            <span>Modo:</span>
-            <button className={modo === 'humano' ? 'ativo' : ''} onClick={() => setModo('humano')}>
-              2 jogadores
-            </button>
-            <button className={modo === 'ia' ? 'ativo' : ''} onClick={() => setModo('ia')}>
-              vs IA
-            </button>
-            {modo === 'ia' && (
-              <span className="niveis">
-                Nível:
-                {[1, 2, 3].map((n) => (
-                  <button key={n} className={nivel === n ? 'ativo' : ''} onClick={() => setNivel(n)}>
-                    {n}
-                  </button>
-                ))}
-              </span>
-            )}
+      {!emJogo ? (
+        // ---------------- TELA INICIAL / LOBBY ----------------
+        <div className="lobby">
+          <div className="modos">
+            {MODOS.map((m) => (
+              <button
+                key={m.id}
+                className={`card-modo${modo === m.id ? ' ativo' : ''}`}
+                onClick={() => setModo(m.id)}
+              >
+                <span className="icone">{m.icone}</span>
+                <span className="card-titulo">{m.titulo}</span>
+                <span className="card-desc">{m.desc}</span>
+              </button>
+            ))}
           </div>
-          <div className="config">
-            <button className="primario" onClick={() => criar.mutate(false)} disabled={criar.isPending}>
-              {criar.isPending ? 'Criando…' : 'Nova partida'}
-            </button>
-            <button onClick={() => criar.mutate(true)} disabled={criar.isPending}>
-              Criar partida online
-            </button>
-          </div>
-        </>
-      ) : (
-        <div className="online-info">
-          <p>
-            Partida online — você joga de <strong>{minhaCor}</strong>{' '}
-            <span className={conectado ? 'ok' : 'off'}>{conectado ? '🟢 tempo real' : '🔌 conectando…'}</span>
-          </p>
-          {linkConvite && (
-            <p className="convite">
-              Convide o oponente (joga de PRETO):
-              <input readOnly value={linkConvite} onFocus={(e) => e.currentTarget.select()} />
-            </p>
+
+          {modo === 'ia' && (
+            <div className="niveis">
+              <span>Nível:</span>
+              {[1, 2, 3].map((n) => (
+                <button key={n} className={nivel === n ? 'ativo' : ''} onClick={() => setNivel(n)}>
+                  {n}
+                </button>
+              ))}
+            </div>
           )}
-        </div>
-      )}
 
-      {estado && (
-        <p className="status">
-          Vez das <strong>{estado.vez}</strong>
-          {iaMutation.isPending && <span> — IA pensando…</span>}
-          {naoEhMinhaVez && !fimDeJogo(estado) && <span> — aguardando o oponente…</span>}
-          {!estado.xequeMate && estado.xeque && <span className="alerta"> — xeque!</span>}
-        </p>
-      )}
+          <button className="primario grande" onClick={() => criar.mutate(modo === 'online')} disabled={criar.isPending}>
+            {criar.isPending ? 'Criando…' : modo === 'online' ? 'Criar partida online' : 'Começar partida'}
+          </button>
 
-      {/* O tabuleiro é sempre exibido — pré-visualização (posição inicial) antes de começar. */}
-      <div className={`tabuleiro-wrap${estado ? '' : ' preview'}`}>
-        <Tabuleiro
-          tabuleiro={estado?.tabuleiro ?? TABULEIRO_INICIAL}
-          selecionada={selecionada}
-          destaques={destaques}
-          casaXeque={casaDoReiEmXeque()}
-          ultimoLance={ultimoLance}
-          onClicarCasa={clicarCasa}
-        />
-      </div>
+          <div className="entrar-link">
+            <span>Recebeu um convite?</span>
+            <div className="linha">
+              <input
+                placeholder="Cole o link da partida online…"
+                value={linkEntrada}
+                onChange={(e) => setLinkEntrada(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && entrarPorLink()}
+              />
+              <button onClick={entrarPorLink}>Entrar</button>
+            </div>
+          </div>
 
-      {estado && (
-        <>
           {erro && <p className="status alerta">{erro}</p>}
 
-          {promocaoPendente && (
+          <div className="tabuleiro-wrap preview">
+            <Tabuleiro
+              tabuleiro={TABULEIRO_INICIAL}
+              selecionada={null}
+              destaques={[]}
+              casaXeque={null}
+              ultimoLance={null}
+              onClicarCasa={() => {}}
+            />
+          </div>
+        </div>
+      ) : (
+        // ---------------- TELA DE JOGO ----------------
+        <div className="jogo">
+          <button className="voltar" onClick={voltar}>
+            ← Voltar ao início
+          </button>
+
+          {minhaCor !== null && (
+            <div className="online-info">
+              <p>
+                Você joga de <strong>{minhaCor}</strong>{' '}
+                <span className={conectado ? 'ok' : 'off'}>{conectado ? '🟢 tempo real' : '🔌 conectando…'}</span>
+              </p>
+              {linkConvite && (
+                <p className="convite">
+                  Convide o oponente (joga de PRETO):
+                  <input readOnly value={linkConvite} onFocus={(e) => e.currentTarget.select()} />
+                </p>
+              )}
+            </div>
+          )}
+
+          {estado && (
+            <p className="status">
+              Vez das <strong>{estado.vez}</strong>
+              {iaMutation.isPending && <span> — IA pensando…</span>}
+              {naoEhMinhaVez && !fimDeJogo(estado) && <span> — aguardando o oponente…</span>}
+              {!estado.xequeMate && estado.xeque && <span className="alerta"> — xeque!</span>}
+            </p>
+          )}
+
+          <div className="tabuleiro-wrap">
+            <Tabuleiro
+              tabuleiro={estado?.tabuleiro ?? TABULEIRO_INICIAL}
+              selecionada={selecionada}
+              destaques={destaques}
+              casaXeque={casaDoReiEmXeque()}
+              ultimoLance={ultimoLance}
+              onClicarCasa={clicarCasa}
+            />
+          </div>
+
+          {erro && <p className="status alerta">{erro}</p>}
+
+          {promocaoPendente && estado && (
             <div className="modal-promocao">
               <p>Promover para:</p>
               <div className="opcoes">
@@ -314,17 +372,17 @@ function App() {
             </div>
           )}
 
-          {fimDeJogo(estado) && (
+          {fimDeJogo(estado) && estado && (
             <div className="fim">
               <p>
                 {estado.xequeMate
                   ? `Xeque-mate! Vencem as ${estado.vez === 'BRANCO' ? 'PRETAS' : 'BRANCAS'}.`
                   : 'Afogamento — empate.'}
               </p>
-              {minhaCor === null && <button onClick={() => criar.mutate(false)}>Jogar de novo</button>}
+              <button onClick={voltar}>Voltar ao início</button>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   )
