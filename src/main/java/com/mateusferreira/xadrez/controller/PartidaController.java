@@ -15,11 +15,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.security.Principal;
 import java.util.List;
 
 /**
  * Controlador REST das partidas. Continua "fino": só conhece o serviço e os
- * DTOs — não sabe nada de banco/entidade. As partidas agora têm 'id' na URL.
+ * DTOs — não sabe nada de banco/entidade. Na Fase 4 passa a olhar o usuário
+ * autenticado (via {@link Principal}) para vincular quem joga em partidas online.
  */
 @RestController
 @RequestMapping("/partidas")
@@ -38,11 +40,28 @@ public class PartidaController {
         messaging.convertAndSend("/topic/partidas/" + estado.id(), estado);
     }
 
-    /** POST /partidas -> cria uma partida nova e devolve o estado (com o id). */
+    /**
+     * Nome do usuário logado, ou null se não houver login. O Spring Security
+     * cria um "anonymousUser" para requisições sem token — tratamos como null.
+     */
+    private String nomeUsuario(Principal principal) {
+        if (principal == null) {
+            return null;
+        }
+        String nome = principal.getName();
+        return "anonymousUser".equals(nome) ? null : nome;
+    }
+
+    /**
+     * POST /partidas -> cria uma partida nova e devolve o estado (com o id).
+     * ?online=true marca como partida online: se houver login, o criador fica
+     * com as brancas (para o sistema de Elo).
+     */
     @PostMapping
-    public EstadoPartidaResponse novaPartida() {
-        ResultadoPartida r = service.novaPartida();
-        return EstadoPartidaResponse.de(r.id(), r.partida());
+    public EstadoPartidaResponse novaPartida(@RequestParam(defaultValue = "false") boolean online,
+                                             Principal principal) {
+        ResultadoPartida r = service.novaPartida(online, nomeUsuario(principal));
+        return EstadoPartidaResponse.de(r);
     }
 
     /**
@@ -51,8 +70,19 @@ public class PartidaController {
      */
     @GetMapping("/{id}")
     public EstadoPartidaResponse verPartida(@PathVariable Long id) {
-        ResultadoPartida r = service.verPartida(id);
-        return EstadoPartidaResponse.de(r.id(), r.partida());
+        return EstadoPartidaResponse.de(service.verPartida(id));
+    }
+
+    /**
+     * POST /partidas/{id}/entrar -> um usuário logado entra numa partida online
+     * pelo link e assume as pretas. Avisa o criador em tempo real (WebSocket).
+     */
+    @PostMapping("/{id}/entrar")
+    public EstadoPartidaResponse entrar(@PathVariable Long id, Principal principal) {
+        ResultadoPartida r = service.entrar(id, nomeUsuario(principal));
+        EstadoPartidaResponse estado = EstadoPartidaResponse.de(r);
+        publicar(estado);
+        return estado;
     }
 
     /** POST /partidas/{id}/jogadas -> aplica uma jogada na partida {id}. */
@@ -63,7 +93,7 @@ public class PartidaController {
                 Posicao.de(jogada.origem()),
                 Posicao.de(jogada.destino()),
                 TipoPromocao.deNome(jogada.promocao()));
-        EstadoPartidaResponse estado = EstadoPartidaResponse.de(r.id(), r.partida());
+        EstadoPartidaResponse estado = EstadoPartidaResponse.de(r);
         publicar(estado); // avisa os dois jogadores em tempo real
         return estado;
     }
@@ -89,7 +119,7 @@ public class PartidaController {
     public EstadoPartidaResponse jogadaIA(@PathVariable Long id,
                                           @RequestParam(defaultValue = "2") int nivel) {
         ResultadoPartida r = service.jogarIA(id, nivel);
-        EstadoPartidaResponse estado = EstadoPartidaResponse.de(r.id(), r.partida());
+        EstadoPartidaResponse estado = EstadoPartidaResponse.de(r);
         publicar(estado);
         return estado;
     }

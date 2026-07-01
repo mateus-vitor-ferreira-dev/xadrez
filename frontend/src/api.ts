@@ -2,6 +2,8 @@
 
 export type Cor = 'BRANCO' | 'PRETO'
 
+export type Resultado = 'EM_ANDAMENTO' | 'VITORIA_BRANCO' | 'VITORIA_PRETO' | 'EMPATE'
+
 export interface EstadoPartida {
   id: number
   vez: Cor
@@ -10,6 +12,18 @@ export interface EstadoPartida {
   afogamento: boolean
   /** 64 caracteres: 1 por casa. Maiúscula=branca, minúscula=preta, '.'=vazia. */
   tabuleiro: string
+  // ----- Partida online / Elo (Fase 4) -----
+  online: boolean
+  /** Username de cada lado (null = ainda não entrou / anônimo). */
+  branco: string | null
+  preto: string | null
+  resultado: Resultado
+  /** Elo atual de cada lado (null se anônimo). */
+  eloBranco: number | null
+  eloPreto: number | null
+  /** Variação de Elo desta partida (só quando termina; null antes disso). */
+  deltaBranco: number | null
+  deltaPreto: number | null
 }
 
 export type TipoPromocao = 'RAINHA' | 'TORRE' | 'BISPO' | 'CAVALO'
@@ -51,8 +65,14 @@ async function lerOuFalhar(resposta: Response): Promise<EstadoPartida> {
 }
 
 // ---------- Partidas ----------
-export async function novaPartida(): Promise<EstadoPartida> {
-  return lerOuFalhar(await fetch(BASE, { method: 'POST', headers: comAuth() }))
+export async function novaPartida(online = false): Promise<EstadoPartida> {
+  const url = online ? `${BASE}?online=true` : BASE
+  return lerOuFalhar(await fetch(url, { method: 'POST', headers: comAuth() }))
+}
+
+/** Entra numa partida online (assume as pretas, se logado). Idempotente no back. */
+export async function entrar(id: number): Promise<EstadoPartida> {
+  return lerOuFalhar(await fetch(`${BASE}/${id}/entrar`, { method: 'POST', headers: comAuth() }))
 }
 
 export async function buscarPartida(id: number): Promise<EstadoPartida> {

@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
 import {
   buscarMovimentos,
   buscarPartida,
+  entrar,
   jogadaIA,
   jogar,
-  login,
   novaPartida,
-  registrar,
-  type Autenticacao,
   type Cor,
   type EstadoPartida,
   type TipoPromocao,
 } from './api'
 import Tabuleiro from './Tabuleiro'
+import { useAuth } from './auth'
 import { tocarSom } from './sons'
 
 const LETRA_PROMOCAO: Record<TipoPromocao, string> = { RAINHA: 'd', TORRE: 't', BISPO: 'b', CAVALO: 'c' }
@@ -68,8 +68,16 @@ function capturadas(tab: string) {
     }
     return out
   }
-  return { pretasCapturadas: faltando(false), brancasCapturadas: faltando(true) }
+  const pretasCapturadas = faltando(false) // peças pretas que sumiram = brancas capturaram
+  const brancasCapturadas = faltando(true) // peças brancas que sumiram = pretas capturaram
+  // Vantagem material pela perspectiva das brancas (pontos de xadrez clássicos).
+  const soma = (pecas: string[]) => pecas.reduce((s, t) => s + (VALOR_PECA[t] ?? 0), 0)
+  const vantagem = soma(pretasCapturadas) - soma(brancasCapturadas)
+  return { pretasCapturadas, brancasCapturadas, vantagem }
 }
+
+/** Valor material clássico (rei não conta). t=torre, c=cavalo, b=bispo, d=dama, p=peão. */
+const VALOR_PECA: Record<string, number> = { p: 1, c: 3, b: 3, t: 5, d: 9, r: 0 }
 
 function App() {
   const queryClient = useQueryClient()
@@ -86,17 +94,8 @@ function App() {
   const [historico, setHistorico] = useState<string[]>([])
   const [tema, setTema] = useState<'escuro' | 'claro'>(() => (localStorage.getItem('tema') === 'claro' ? 'claro' : 'escuro'))
   const [mudo, setMudo] = useState<boolean>(() => localStorage.getItem('mudo') === '1')
-  const [auth, setAuth] = useState<Autenticacao | null>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('auth') ?? 'null') as Autenticacao | null
-    } catch {
-      return null
-    }
-  })
-  const [modoAuth, setModoAuth] = useState<'login' | 'cadastro'>('login')
-  const [formUsuario, setFormUsuario] = useState('')
-  const [formSenha, setFormSenha] = useState('')
-  const [erroAuth, setErroAuth] = useState<string | null>(null)
+  // A sessão agora mora no AuthProvider (compartilhada com as telas /login e /registro).
+  const { auth, sair, atualizarElo } = useAuth()
 
   const partida = useQuery({
     queryKey: ['partida', idPartida],
@@ -123,13 +122,24 @@ function App() {
     localStorage.setItem('mudo', mudo ? '1' : '0')
   }, [mudo])
 
+  // Quando uma partida online termina, o Elo do usuário mudou no backend:
+  // reflete o novo valor no topo (e no localStorage).
+  useEffect(() => {
+    if (!estado || !auth || estado.resultado === 'EM_ANDAMENTO') return
+    const meu = minhaCor === 'BRANCO' ? estado.eloBranco : estado.eloPreto
+    if (meu != null) atualizarElo(meu) // atualizarElo já ignora se nada mudou
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estado?.resultado, estado?.eloBranco, estado?.eloPreto])
+
   // Entrar por ?partida=ID na URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const pid = params.get('partida')
     if (pid) {
+      const cor: Cor = params.get('cor') === 'branco' ? 'BRANCO' : 'PRETO'
       setIdPartida(Number(pid))
-      setMinhaCor(params.get('cor') === 'branco' ? 'BRANCO' : 'PRETO')
+      setMinhaCor(cor)
+      if (cor === 'PRETO') entrar(Number(pid)).catch(() => {}) // registra nas pretas (Elo)
     }
   }, [])
 
@@ -188,7 +198,7 @@ function App() {
   })
 
   const criar = useMutation({
-    mutationFn: (_online: boolean) => novaPartida(),
+    mutationFn: (online: boolean) => novaPartida(online),
     onSuccess: (e, online) => {
       setIdPartida(e.id)
       queryClient.setQueryData(['partida', e.id], e)
@@ -219,30 +229,6 @@ function App() {
     },
     onError: (e) => setErro(e instanceof Error ? e.message : 'Jogada inválida'),
   })
-
-  const autenticar = useMutation({
-    mutationFn: (v: { modo: 'login' | 'cadastro'; usuario: string; senha: string }) =>
-      (v.modo === 'login' ? login : registrar)(v.usuario, v.senha),
-    onSuccess: (a) => {
-      setAuth(a)
-      localStorage.setItem('auth', JSON.stringify(a))
-      setFormSenha('')
-      setErroAuth(null)
-    },
-    onError: (e) => setErroAuth(e instanceof Error ? e.message : 'Falha na autenticação.'),
-  })
-
-  function sair() {
-    setAuth(null)
-    localStorage.removeItem('auth')
-  }
-  function enviarAuth() {
-    if (formUsuario.trim().length < 3 || formSenha.length < 4) {
-      setErroAuth('Usuário (3+ caracteres) e senha (4+) são obrigatórios.')
-      return
-    }
-    autenticar.mutate({ modo: modoAuth, usuario: formUsuario.trim(), senha: formSenha })
-  }
 
   function pecaEm(notacao: string): string {
     if (!estado) return '.'
@@ -315,6 +301,7 @@ function App() {
     const cor: Cor = /cor=branco/.test(txt) ? 'BRANCO' : 'PRETO'
     setIdPartida(Number(pid))
     setMinhaCor(cor)
+    if (cor === 'PRETO') entrar(Number(pid)).catch(() => {}) // registra o jogador nas pretas (Elo)
     window.history.replaceState(null, '', `?partida=${pid}&cor=${cor === 'BRANCO' ? 'branco' : 'preto'}`)
     setLinkEntrada('')
     setErro(null)
@@ -327,16 +314,32 @@ function App() {
   const emJogo = idPartida !== null
   const caps = estado ? capturadas(estado.tabuleiro) : null
 
+  // Perspectiva do jogador logado numa partida online (Fase 4 / Elo).
+  const souBranco = minhaCor === 'BRANCO'
+  const meuElo = estado ? (souBranco ? estado.eloBranco : estado.eloPreto) : null
+  const meuDelta = estado ? (souBranco ? estado.deltaBranco : estado.deltaPreto) : null
+  const advNome = estado ? (souBranco ? estado.preto : estado.branco) : null
+  const advElo = estado ? (souBranco ? estado.eloPreto : estado.eloBranco) : null
+
   return (
     <div className="app">
       <div className="barra-topo">
         <div className="usuario-area">
-          {auth && (
+          {auth ? (
             <>
               <span className="usuario-logado">♟ {auth.usuario} · Elo {auth.elo}</span>
               <button className="toggle" onClick={sair}>
                 Sair
               </button>
+            </>
+          ) : (
+            <>
+              <Link className="toggle" to="/login">
+                Entrar
+              </Link>
+              <Link className="toggle" to="/registro">
+                Criar conta
+              </Link>
             </>
           )}
         </div>
@@ -357,72 +360,50 @@ function App() {
 
       {!emJogo ? (
         <div className="lobby">
-          {!auth && (
-            <div className="auth-card">
-              <div className="auth-tabs">
-                <button className={modoAuth === 'login' ? 'ativo' : ''} onClick={() => setModoAuth('login')}>
-                  Entrar
-                </button>
-                <button className={modoAuth === 'cadastro' ? 'ativo' : ''} onClick={() => setModoAuth('cadastro')}>
-                  Criar conta
-                </button>
-              </div>
-              <input placeholder="Usuário" value={formUsuario} onChange={(e) => setFormUsuario(e.target.value)} />
-              <input
-                type="password"
-                placeholder="Senha"
-                value={formSenha}
-                onChange={(e) => setFormSenha(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && enviarAuth()}
-              />
-              <button className="primario" onClick={enviarAuth} disabled={autenticar.isPending}>
-                {autenticar.isPending ? '…' : modoAuth === 'login' ? 'Entrar' : 'Criar conta'}
-              </button>
-              {erroAuth && <p className="status alerta">{erroAuth}</p>}
-              <p className="auth-hint">Opcional — em breve valerá pontuação (Elo) nas partidas online.</p>
-            </div>
-          )}
-
-          <div className="modos">
-            {MODOS.map((m) => (
-              <button key={m.id} className={`card-modo${modo === m.id ? ' ativo' : ''}`} onClick={() => setModo(m.id)}>
-                <span className="icone">{m.icone}</span>
-                <span className="card-titulo">{m.titulo}</span>
-                <span className="card-desc">{m.desc}</span>
-              </button>
-            ))}
-          </div>
-
-          {modo === 'ia' && (
-            <div className="niveis">
-              <span>Nível:</span>
-              {[1, 2, 3].map((n) => (
-                <button key={n} className={nivel === n ? 'ativo' : ''} onClick={() => setNivel(n)}>
-                  {n}
+          {/* Coluna de controles: escolher o modo e começar/entrar numa partida. */}
+          <div className="lobby-setup">
+            <div className="modos">
+              {MODOS.map((m) => (
+                <button key={m.id} className={`card-modo${modo === m.id ? ' ativo' : ''}`} onClick={() => setModo(m.id)}>
+                  <span className="icone">{m.icone}</span>
+                  <span className="card-titulo">{m.titulo}</span>
+                  <span className="card-desc">{m.desc}</span>
                 </button>
               ))}
             </div>
-          )}
 
-          <button className="primario grande" onClick={() => criar.mutate(modo === 'online')} disabled={criar.isPending}>
-            {criar.isPending ? 'Criando…' : modo === 'online' ? 'Criar partida online' : 'Começar partida'}
-          </button>
+            {modo === 'ia' && (
+              <div className="niveis">
+                <span>Nível:</span>
+                {[1, 2, 3].map((n) => (
+                  <button key={n} className={nivel === n ? 'ativo' : ''} onClick={() => setNivel(n)}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+            )}
 
-          <div className="entrar-link">
-            <span>Recebeu um convite?</span>
-            <div className="linha">
-              <input
-                placeholder="Cole o link da partida online…"
-                value={linkEntrada}
-                onChange={(e) => setLinkEntrada(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && entrarPorLink()}
-              />
-              <button onClick={entrarPorLink}>Entrar</button>
+            <button className="primario grande" onClick={() => criar.mutate(modo === 'online')} disabled={criar.isPending}>
+              {criar.isPending ? 'Criando…' : modo === 'online' ? 'Criar partida online' : 'Começar partida'}
+            </button>
+
+            <div className="entrar-link">
+              <span>Recebeu um convite?</span>
+              <div className="linha">
+                <input
+                  placeholder="Cole o link da partida online…"
+                  value={linkEntrada}
+                  onChange={(e) => setLinkEntrada(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && entrarPorLink()}
+                />
+                <button onClick={entrarPorLink}>Entrar</button>
+              </div>
             </div>
+
+            {erro && <p className="status alerta">{erro}</p>}
           </div>
 
-          {erro && <p className="status alerta">{erro}</p>}
-
+          {/* Coluna visual: prévia do tabuleiro como "hero" da tela inicial. */}
           <div className="tabuleiro-wrap preview">
             <Tabuleiro tabuleiro={TABULEIRO_INICIAL} selecionada={null} destaques={[]} casaXeque={null} ultimoLance={null} onClicarCasa={() => {}} />
           </div>
@@ -439,6 +420,15 @@ function App() {
                 Você joga de <strong>{minhaCor}</strong>{' '}
                 <span className={conectado ? 'ok' : 'off'}>{conectado ? '🟢 tempo real' : '🔌 conectando…'}</span>
               </p>
+              {estado?.online &&
+                (advNome ? (
+                  <p className="adversario">
+                    Adversário: <strong>{advNome}</strong>
+                    {advElo != null && ` · Elo ${advElo}`}
+                  </p>
+                ) : (
+                  <p className="adversario aguardando">Aguardando o adversário entrar…</p>
+                ))}
               {linkConvite && (
                 <p className="convite">
                   Convide o oponente (joga de PRETO):
@@ -471,33 +461,45 @@ function App() {
             </div>
 
             <aside className="painel">
-              {caps && (
-                <div className="capturadas">
-                  <div className="tray" title="Peças pretas capturadas">
-                    {caps.pretasCapturadas.map((t, i) => (
-                      <img key={`p${i}`} src={`/pecas/b${t}.svg`} alt="" />
-                    ))}
-                  </div>
-                  <div className="tray" title="Peças brancas capturadas">
-                    {caps.brancasCapturadas.map((t, i) => (
-                      <img key={`b${i}`} src={`/pecas/w${t}.svg`} alt="" />
-                    ))}
-                  </div>
+              {caps && (caps.pretasCapturadas.length > 0 || caps.brancasCapturadas.length > 0) && (
+                <div className="material">
+                  {caps.pretasCapturadas.length > 0 && (
+                    <div className="linha-captura" title="Peças capturadas pelas brancas">
+                      {caps.pretasCapturadas.map((t, i) => (
+                        <img key={`p${i}`} src={`/pecas/b${t}.svg`} alt="" />
+                      ))}
+                      {caps.vantagem > 0 && <span className="vantagem">+{caps.vantagem}</span>}
+                    </div>
+                  )}
+                  {caps.brancasCapturadas.length > 0 && (
+                    <div className="linha-captura" title="Peças capturadas pelas pretas">
+                      {caps.brancasCapturadas.map((t, i) => (
+                        <img key={`b${i}`} src={`/pecas/w${t}.svg`} alt="" />
+                      ))}
+                      {caps.vantagem < 0 && <span className="vantagem">+{-caps.vantagem}</span>}
+                    </div>
+                  )}
                 </div>
               )}
 
-              <div className="historico">
-                <h3>Lances</h3>
-                <ol>
-                  {Array.from({ length: Math.ceil(historico.length / 2) }, (_, i) => (
-                    <li key={i}>
-                      <span>{historico[i * 2]}</span>
-                      <span>{historico[i * 2 + 1] ?? ''}</span>
-                    </li>
-                  ))}
-                  {historico.length === 0 && <li className="vazio">Sem lances ainda</li>}
-                </ol>
-              </div>
+              <details className="historico" open={historico.length > 0}>
+                <summary>
+                  <span>Histórico de lances</span>
+                  <span className="contador">{historico.length}</span>
+                </summary>
+                {historico.length === 0 ? (
+                  <p className="vazio">Sem lances ainda.</p>
+                ) : (
+                  <ol>
+                    {Array.from({ length: Math.ceil(historico.length / 2) }, (_, i) => (
+                      <li key={i}>
+                        <span>{historico[i * 2]}</span>
+                        <span>{historico[i * 2 + 1] ?? ''}</span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </details>
             </aside>
           </div>
 
@@ -523,6 +525,15 @@ function App() {
                   ? `Xeque-mate! Vencem as ${estado.vez === 'BRANCO' ? 'PRETAS' : 'BRANCAS'}.`
                   : 'Afogamento — empate.'}
               </p>
+              {estado.online && meuDelta != null && (
+                <p className="elo-delta">
+                  Seu Elo: <strong>{meuElo}</strong>{' '}
+                  <span className={meuDelta >= 0 ? 'sobe' : 'desce'}>
+                    ({meuDelta >= 0 ? '+' : ''}
+                    {meuDelta})
+                  </span>
+                </p>
+              )}
               <button onClick={voltar}>Voltar ao início</button>
             </div>
           )}

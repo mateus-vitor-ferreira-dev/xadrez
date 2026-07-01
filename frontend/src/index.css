@@ -24,6 +24,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden; /* evita scroll horizontal por brilhos/decorações que "vazam" */
   font-family: var(--font-body);
   color: var(--ink);
   background:
@@ -47,7 +48,7 @@ body::before {
 .app {
   position: relative;
   z-index: 1;
-  max-width: 840px;
+  max-width: 1040px;
   margin: 0 auto;
   padding: 28px 20px 60px;
   text-align: center;
@@ -180,9 +181,12 @@ button.primario:hover:not(:disabled) {
   position: relative;
   z-index: 1;
 }
-/* pré-visualização (antes de começar): levemente esmaecida e sem interação */
+/* pré-visualização (antes de começar): levemente esmaecida, sem interação e
+   um pouco menor, para caber ao lado dos controles na tela inicial */
 .tabuleiro-wrap.preview .tabuleiro {
   opacity: 0.9;
+  grid-template-columns: repeat(8, clamp(34px, 6.4vw, 50px));
+  grid-template-rows: repeat(8, clamp(34px, 6.4vw, 50px));
 }
 .tabuleiro-wrap.preview .casa {
   cursor: default;
@@ -360,9 +364,35 @@ button.primario:hover:not(:disabled) {
 .online-info .off {
   color: var(--gold-deep);
 }
+.online-info .adversario {
+  margin-top: 8px;
+  font-size: 14px;
+}
+.online-info .adversario.aguardando {
+  font-style: italic;
+  color: var(--gold-deep);
+}
 .online-info .convite {
   font-size: 13px;
   margin-top: 12px;
+}
+
+/* Variação de Elo no fim da partida online. */
+.fim .elo-delta {
+  margin: -4px 0 14px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.fim .elo-delta strong {
+  color: var(--ink);
+}
+.fim .elo-delta .sobe {
+  color: #6fce86;
+}
+.fim .elo-delta .desce {
+  color: #e0736b;
 }
 .online-info .convite input {
   display: block;
@@ -378,11 +408,28 @@ button.primario:hover:not(:disabled) {
 }
 
 /* ---------- Lobby / navegação ---------- */
-.lobby,
 .jogo {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+/* Tela inicial: dois blocos lado a lado (controles + prévia do tabuleiro),
+   centralizados na tela. Em telas estreitas eles empilham (flex-wrap). */
+.lobby {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(20px, 2.5vw, 36px);
+  min-height: 62vh; /* ajuda a centralizar verticalmente sob o cabeçalho */
+}
+.lobby-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: min(480px, 100%); /* nunca ultrapassa o container (evita overflow no mobile) */
 }
 
 .modos {
@@ -390,7 +437,6 @@ button.primario:hover:not(:disabled) {
   flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 16px;
   animation: surgir 0.6s ease 0.16s both;
 }
 .card-modo {
@@ -437,7 +483,6 @@ button.primario:hover:not(:disabled) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 14px;
   color: var(--muted);
 }
 .primario.grande {
@@ -446,18 +491,21 @@ button.primario:hover:not(:disabled) {
 }
 
 .entrar-link {
-  margin-top: 22px;
+  width: 100%; /* acompanha a coluna, para o botão poder quebrar quando faltar espaço */
   font-size: 13px;
   color: var(--muted);
 }
 .entrar-link .linha {
   display: flex;
+  flex-wrap: wrap; /* em telas estreitas o botão desce para a linha de baixo */
   gap: 8px;
   margin-top: 8px;
   justify-content: center;
 }
 .entrar-link input {
-  width: min(360px, 70vw);
+  flex: 1 1 180px; /* cresce até o max-width e encolhe em telas estreitas */
+  min-width: 0;
+  max-width: 320px;
   padding: 9px 12px;
   font-family: var(--font-body);
   font-size: 13px;
@@ -531,42 +579,112 @@ button.primario:hover:not(:disabled) {
   font-size: 15px;
   line-height: 1;
 }
+/* Entrar / Criar conta na barra: são <Link> (viram <a>), então recriam o
+   visual de "pílula" do botão, que não se aplica a âncoras. */
+a.toggle {
+  display: inline-block;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  border: 1px solid var(--surface-line);
+  border-radius: 999px;
+  transition: color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+a.toggle:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+  transform: translateY(-1px);
+}
 
-/* card de autenticação (lobby) */
-.auth-card {
+/* ---------- Página de autenticação (rotas /login e /registro) ---------- */
+.auth-page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: min(320px, 90vw);
-  margin: 0 auto 20px;
-  padding: 18px;
-  border: 1px solid var(--surface-line);
-  border-radius: 14px;
-  background: var(--surface);
-  animation: surgir 0.6s ease both;
-}
-.auth-tabs {
-  display: flex;
-  gap: 6px;
+  align-items: center;
   justify-content: center;
-  margin-bottom: 4px;
+  padding: 24px;
 }
-.auth-card input {
-  padding: 9px 12px;
+.auth-page .voltar-auth {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+.auth-page .voltar-auth:hover {
+  color: var(--gold);
+}
+.auth-box {
+  width: min(360px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 34px 28px;
+  text-align: center;
+  border: 1px solid var(--surface-line);
+  border-radius: 18px;
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.8);
+  animation: surgir 0.5s ease both;
+}
+.auth-marca {
+  font-size: 44px;
+  line-height: 1;
+  color: var(--gold);
+  filter: drop-shadow(0 4px 10px rgba(230, 192, 103, 0.35));
+}
+.auth-box h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+  color: var(--ink);
+}
+.auth-sub {
+  margin: -4px 0 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.auth-box input {
+  padding: 11px 14px;
   font-family: var(--font-body);
   font-size: 14px;
   color: var(--ink);
   background: rgba(0, 0, 0, 0.28);
   border: 1px solid var(--surface-line);
-  border-radius: 8px;
+  border-radius: 10px;
 }
-[data-tema='claro'] .auth-card input {
+[data-tema='claro'] .auth-box input {
   background: rgba(255, 255, 255, 0.6);
 }
-.auth-hint {
-  font-size: 11px;
+.auth-box input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.auth-box .primario {
+  margin-top: 4px;
+  padding: 11px;
+}
+.auth-troca {
+  margin: 4px 0 0;
+  font-size: 13px;
   color: var(--muted);
-  margin: 2px 0 0;
+}
+.auth-troca a {
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: none;
+}
+.auth-troca a:hover {
+  text-decoration: underline;
 }
 
 /* ---------- Layout da tela de jogo ---------- */
@@ -585,45 +703,88 @@ button.primario:hover:not(:disabled) {
   gap: 14px;
 }
 
-.capturadas {
+/* Material capturado: uma linha por lado, só aparece quando há capturas. */
+.material {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
-.capturadas .tray {
+.linha-captura {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
-  min-height: 30px;
-  padding: 5px 8px;
-  border: 1px solid var(--surface-line);
-  border-radius: 10px;
-  background: var(--surface);
+  align-items: center;
+  gap: 1px;
+  min-height: 26px;
 }
-.capturadas .tray img {
+.linha-captura img {
   width: 22px;
   height: 22px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+.linha-captura .vantagem {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
 }
 
+/* Histórico como botão que expande (<details>/<summary>). */
 .historico {
   border: 1px solid var(--surface-line);
   border-radius: 12px;
   background: var(--surface);
-  padding: 10px 14px;
+  overflow: hidden;
 }
-.historico h3 {
-  margin: 0 0 8px;
+.historico summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  cursor: pointer;
+  list-style: none;
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--gold);
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.historico summary:hover {
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+}
+.historico summary::-webkit-details-marker {
+  display: none;
+}
+/* Seta à esquerda do título, que gira ao abrir. */
+.historico summary::before {
+  content: '›';
+  order: -1;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+.historico[open] summary::before {
+  transform: rotate(90deg);
+}
+.historico .contador {
+  margin-left: auto;
+  min-width: 22px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 15%, transparent);
+  color: var(--gold);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
 }
 .historico ol {
   counter-reset: lance;
   list-style: none;
   margin: 0;
-  padding: 0;
-  max-height: 320px;
+  padding: 4px 14px 12px;
+  max-height: 300px;
   overflow-y: auto;
   font-size: 13px;
   color: var(--ink);
@@ -642,14 +803,12 @@ button.primario:hover:not(:disabled) {
 .historico li span {
   min-width: 54px;
 }
-.historico li.vazio {
-  counter-increment: none;
+.historico .vazio {
+  margin: 0;
+  padding: 0 14px 12px;
   color: var(--muted);
   font-style: italic;
-}
-.historico li.vazio::before {
-  content: '';
-  min-width: 0;
+  font-size: 13px;
 }
 
 /* ---------- Animações ---------- */
