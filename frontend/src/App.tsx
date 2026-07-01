@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
 import {
   buscarMovimentos,
@@ -14,20 +14,16 @@ import {
   type TipoPromocao,
 } from './api'
 import Tabuleiro from './Tabuleiro'
+import CarrosselModos from './CarrosselModos'
+import PecaModo from './PecaModo'
 import { useAuth } from './auth'
+import { type Modo } from './modos'
+import * as jogoCache from './jogoCache'
 import { tocarSom } from './sons'
 
 const LETRA_PROMOCAO: Record<TipoPromocao, string> = { RAINHA: 'd', TORRE: 't', BISPO: 'b', CAVALO: 'c' }
 const TABULEIRO_INICIAL = 'TCBDRBCTPPPPPPPP................................pppppppptcbdrbct'
 const INICIAIS: Record<string, number> = { p: 8, t: 2, c: 2, b: 2, d: 1, r: 1 }
-
-type Modo = 'humano' | 'ia' | 'online'
-
-const MODOS: { id: Modo; icone: string; titulo: string; desc: string }[] = [
-  { id: 'humano', icone: '👥', titulo: '2 jogadores', desc: 'No mesmo dispositivo' },
-  { id: 'ia', icone: '🤖', titulo: 'Contra a IA', desc: 'Escolha o nível' },
-  { id: 'online', icone: '🌐', titulo: 'Online', desc: 'Por link, em tempo real' },
-]
 
 function wsUrl(): string {
   const api = import.meta.env.VITE_API_URL
@@ -96,6 +92,7 @@ function App() {
   const [mudo, setMudo] = useState<boolean>(() => localStorage.getItem('mudo') === '1')
   // A sessão agora mora no AuthProvider (compartilhada com as telas /login e /registro).
   const { auth, sair, atualizarElo } = useAuth()
+  const navigate = useNavigate()
 
   const partida = useQuery({
     queryKey: ['partida', idPartida],
@@ -131,17 +128,50 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estado?.resultado, estado?.eloBranco, estado?.eloPreto])
 
-  // Entrar por ?partida=ID na URL
+  // Ao montar: retoma uma partida. Prioridade para o link ?partida= (convite
+  // online); senão, restaura um jogo LOCAL/IA guardado em cache (sessionStorage).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const pid = params.get('partida')
     if (pid) {
+      // Jogar online exige conta: sem login, manda para a tela de login.
+      if (!auth) {
+        navigate('/login')
+        return
+      }
       const cor: Cor = params.get('cor') === 'branco' ? 'BRANCO' : 'PRETO'
       setIdPartida(Number(pid))
       setMinhaCor(cor)
       if (cor === 'PRETO') entrar(Number(pid)).catch(() => {}) // registra nas pretas (Elo)
+      return
     }
+    const cache = jogoCache.ler()
+    if (cache) {
+      setIdPartida(cache.id)
+      setModo(cache.modo)
+      setNivel(cache.nivel)
+      setHistorico(cache.historico)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Mantém o cache do jogo local/IA em dia (sobrevive a um F5 na mesma aba).
+  // Partidas online não entram aqui: exigem conta e já voltam pela URL.
+  useEffect(() => {
+    if (idPartida !== null && (modo === 'humano' || modo === 'ia')) {
+      jogoCache.salvar({ id: idPartida, modo, nivel, historico })
+    }
+  }, [idPartida, modo, nivel, historico])
+
+  // Se a partida restaurada do cache não existe mais no backend, descarta e
+  // volta ao lobby (evita ficar preso numa tela de erro).
+  useEffect(() => {
+    if (partida.isError && idPartida !== null && minhaCor === null) {
+      jogoCache.limpar()
+      voltar()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partida.isError])
 
   // Cada vez que o tabuleiro muda: registra o lance no histórico e toca o som.
   const boardAntesRef = useRef<string | null>(null)
@@ -280,6 +310,7 @@ function App() {
   }
 
   function voltar() {
+    jogoCache.limpar() // sair do jogo apaga o cache local/IA
     setIdPartida(null)
     setMinhaCor(null)
     setSelecionada(null)
@@ -290,7 +321,27 @@ function App() {
     window.history.replaceState(null, '', window.location.pathname)
   }
 
+  /** Ação do botão principal do lobby — muda conforme o modo (e o login, no online). */
+  function acaoPrincipal() {
+    if (modo === 'online') {
+      // Jogar online exige conta. Sem login, vai para /login; com login, cria a
+      // partida online (futuramente: lobby de salas por Elo).
+      if (!auth) {
+        navigate('/login')
+        return
+      }
+      criar.mutate(true)
+      return
+    }
+    criar.mutate(false) // humano ou IA: sem login
+  }
+
   function entrarPorLink() {
+    // Entrar numa partida online também exige conta.
+    if (!auth) {
+      navigate('/login')
+      return
+    }
     const txt = linkEntrada.trim()
     const m = txt.match(/partida=(\d+)/)
     const pid = m ? m[1] : /^\d+$/.test(txt) ? txt : null
@@ -306,6 +357,15 @@ function App() {
     setLinkEntrada('')
     setErro(null)
   }
+
+  // Rótulo do botão principal conforme o modo/login.
+  const rotuloAcao = criar.isPending
+    ? 'Criando…'
+    : modo === 'online'
+      ? auth
+        ? 'Jogar online'
+        : 'Entrar para jogar online'
+      : 'Começar partida'
 
   const linkConvite =
     idPartida && minhaCor === 'BRANCO'
@@ -360,18 +420,15 @@ function App() {
 
       {!emJogo ? (
         <div className="lobby">
-          {/* Coluna de controles: escolher o modo e começar/entrar numa partida. */}
-          <div className="lobby-setup">
-            <div className="modos">
-              {MODOS.map((m) => (
-                <button key={m.id} className={`card-modo${modo === m.id ? ' ativo' : ''}`} onClick={() => setModo(m.id)}>
-                  <span className="icone">{m.icone}</span>
-                  <span className="card-titulo">{m.titulo}</span>
-                  <span className="card-desc">{m.desc}</span>
-                </button>
-              ))}
-            </div>
+          {/* "Cena": carrossel de modos à esquerda e a peça-hero à direita,
+              centralizados juntos (estilo seleção de personagem). */}
+          <div className="lobby-cena">
+            <CarrosselModos ativo={modo} onAtivoChange={setModo} />
+            <PecaModo modo={modo} />
+          </div>
 
+          {/* Ações abaixo da cena: nível (IA), botão principal e entrar por convite. */}
+          <div className="lobby-acoes">
             {modo === 'ia' && (
               <div className="niveis">
                 <span>Nível:</span>
@@ -383,8 +440,8 @@ function App() {
               </div>
             )}
 
-            <button className="primario grande" onClick={() => criar.mutate(modo === 'online')} disabled={criar.isPending}>
-              {criar.isPending ? 'Criando…' : modo === 'online' ? 'Criar partida online' : 'Começar partida'}
+            <button className="primario grande" onClick={acaoPrincipal} disabled={criar.isPending}>
+              {rotuloAcao}
             </button>
 
             <div className="entrar-link">
@@ -401,11 +458,6 @@ function App() {
             </div>
 
             {erro && <p className="status alerta">{erro}</p>}
-          </div>
-
-          {/* Coluna visual: prévia do tabuleiro como "hero" da tela inicial. */}
-          <div className="tabuleiro-wrap preview">
-            <Tabuleiro tabuleiro={TABULEIRO_INICIAL} selecionada={null} destaques={[]} casaXeque={null} ultimoLance={null} onClicarCasa={() => {}} />
           </div>
         </div>
       ) : (
