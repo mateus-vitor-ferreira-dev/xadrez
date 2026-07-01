@@ -181,19 +181,6 @@ button.primario:hover:not(:disabled) {
   position: relative;
   z-index: 1;
 }
-/* pré-visualização (antes de começar): levemente esmaecida, sem interação e
-   um pouco menor, para caber ao lado dos controles na tela inicial */
-.tabuleiro-wrap.preview .tabuleiro {
-  opacity: 0.9;
-  grid-template-columns: repeat(8, clamp(34px, 6.4vw, 50px));
-  grid-template-rows: repeat(8, clamp(34px, 6.4vw, 50px));
-}
-.tabuleiro-wrap.preview .casa {
-  cursor: default;
-}
-.tabuleiro-wrap.preview .casa:hover {
-  filter: none;
-}
 
 .tabuleiro {
   display: grid;
@@ -414,69 +401,166 @@ button.primario:hover:not(:disabled) {
   align-items: center;
 }
 
-/* Tela inicial: dois blocos lado a lado (controles + prévia do tabuleiro),
-   centralizados na tela. Em telas estreitas eles empilham (flex-wrap). */
+/* Tela inicial: "seleção de personagem". A "cena" (carrossel + peça) fica
+   centralizada; as ações (botão/convite) ficam abaixo. */
 .lobby {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  min-height: 60vh; /* ajuda a centralizar verticalmente sob o cabeçalho */
+}
+.lobby-cena {
+  display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: clamp(20px, 2.5vw, 36px);
-  min-height: 62vh; /* ajuda a centralizar verticalmente sob o cabeçalho */
+  gap: clamp(16px, 4vw, 56px);
 }
-.lobby-setup {
+.lobby-acoes {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
-  width: min(480px, 100%); /* nunca ultrapassa o container (evita overflow no mobile) */
+  gap: 16px;
+  width: min(420px, 100%);
 }
 
-.modos {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-  animation: surgir 0.6s ease 0.16s both;
-}
-.card-modo {
+/* ---- Carrossel vertical de modos ---- */
+.carrossel {
+  --item-altura: 92px;
+  width: min(340px, 86vw);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  width: 150px;
-  padding: 18px 14px;
+  outline: none;
+}
+.carrossel-janela {
+  position: relative;
+  width: 100%;
+  height: calc(var(--item-altura) * 3); /* mostra o ativo + 1 vizinho de cada lado */
+  overflow: hidden;
+  /* esmaece topo/baixo, dando o ar de "há mais opções fora da janela" */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 24%, #000 76%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 24%, #000 76%, transparent);
+}
+.carrossel-trilho {
+  display: flex;
+  flex-direction: column;
+  /* desliza para centralizar o modo ativo (transform vem por style inline) */
+  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.carrossel-item {
+  height: var(--item-altura);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+  border: 0;
   border-radius: 14px;
-  border: 1px solid var(--surface-line);
-  background: var(--surface);
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
-}
-.card-modo:hover:not(:disabled) {
-  transform: translateY(-2px);
-  border-color: var(--gold);
+  background: transparent;
   color: var(--ink);
+  text-align: left;
+  opacity: 0.4;
+  transform: scale(0.88);
+  transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
 }
-.card-modo.ativo {
-  /* mantém o fundo escuro (sobrescreve o preenchimento dourado do button.ativo)
-     e sinaliza a seleção só com o anel + brilho dourado */
+.carrossel-item:hover:not(.ativo) {
+  opacity: 0.7;
+  transform: scale(0.9);
+}
+.carrossel-item.ativo {
+  opacity: 1;
+  transform: scale(1);
   background: var(--surface);
-  color: var(--ink);
-  border-color: var(--gold);
-  box-shadow: 0 0 0 1px var(--gold), 0 10px 26px -12px rgba(230, 192, 103, 0.6);
+  box-shadow: 0 0 0 1px var(--surface-line), 0 14px 32px -18px rgba(230, 192, 103, 0.55);
 }
-.card-modo .icone {
-  font-size: 30px;
+/* anel dourado quando o carrossel está focado via teclado */
+.carrossel:focus-visible .carrossel-item.ativo {
+  box-shadow: 0 0 0 2px var(--gold), 0 14px 32px -18px rgba(230, 192, 103, 0.55);
+}
+.carrossel-item .icone {
+  font-size: 34px;
   line-height: 1;
 }
-.card-modo .card-titulo {
+.carrossel-item .texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.carrossel-titulo {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 18px;
+  font-size: 20px;
+  color: var(--ink);
+}
+.carrossel-item.ativo .carrossel-titulo {
   color: var(--gold);
 }
-.card-modo .card-desc {
+.carrossel-desc {
+  font-size: 13px;
+  color: var(--muted);
+}
+.carrossel-seta {
+  padding: 2px 14px;
   font-size: 12px;
   color: var(--muted);
+  background: transparent;
+  border: 0;
+}
+.carrossel-seta:hover:not(:disabled) {
+  color: var(--gold);
+  border-color: transparent;
+  transform: none;
+}
+.carrossel-seta:disabled {
+  opacity: 0.25;
+}
+
+/* ---- Peça-hero que "cai e para em pé" ---- */
+.peca-modo {
+  position: relative;
+  width: 200px;
+  height: 292px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.peca-cair {
+  width: 168px;
+  height: auto;
+  transform-origin: 50% 100%; /* pivô na base: a rotação parece "tombar e assentar" */
+  filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.55));
+  animation: cair 0.72s cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+.peca-sombra {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 150px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.5), transparent 75%);
+  animation: sombra-cair 0.72s cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+/* Em telas estreitas: peça menor e carrossel um pouco mais compacto. */
+@media (max-width: 560px) {
+  .peca-modo {
+    width: 150px;
+    height: 210px;
+  }
+  .peca-cair {
+    width: 120px;
+  }
+  .peca-sombra {
+    width: 110px;
+    bottom: 4px;
+  }
+  .carrossel {
+    --item-altura: 80px;
+  }
 }
 
 .niveis {
@@ -836,5 +920,50 @@ a.toggle:hover {
   }
   50% {
     box-shadow: inset 0 0 0 2000px rgba(214, 90, 72, 0.62);
+  }
+}
+/* Peça caindo do alto e assentando em pé (com pivô na base): cai, toca o chão,
+   quica uma vez e estabiliza reta. */
+@keyframes cair {
+  0% {
+    transform: translateY(-260px) rotate(-16deg) scale(0.96);
+    opacity: 0;
+  }
+  45% {
+    transform: translateY(0) rotate(9deg) scale(1.03);
+    opacity: 1;
+  }
+  62% {
+    transform: translateY(-30px) rotate(-5deg) scale(0.99);
+  }
+  78% {
+    transform: translateY(0) rotate(3deg) scale(1.01);
+  }
+  90% {
+    transform: translateY(-8px) rotate(-1deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+/* Sombra no chão acompanhando a queda: some no alto, "estoura" ao tocar o chão,
+   encolhe no quique e assenta. */
+@keyframes sombra-cair {
+  0% {
+    transform: translateX(-50%) scale(0.4);
+    opacity: 0;
+  }
+  45% {
+    transform: translateX(-50%) scale(1.06);
+    opacity: 0.55;
+  }
+  62% {
+    transform: translateX(-50%) scale(0.82);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.5;
   }
 }
