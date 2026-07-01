@@ -653,10 +653,59 @@ button.primario:hover:not(:disabled) {
   align-items: center;
   gap: 8px;
 }
-.usuario-logado {
-  font-size: 13px;
+/* Cartão do jogador logado: avatar (inicial) + nome + chip de Elo dourado. */
+.perfil {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 4px 6px 4px 4px;
+  border: 1px solid var(--surface-line);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 8px 22px -14px rgba(230, 192, 103, 0.7);
+}
+.perfil-avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(150deg, #f6e4b8, var(--gold) 70%, var(--gold-deep));
+  color: #1c140c;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.perfil-nome {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
   font-weight: 600;
-  color: var(--gold);
+  color: var(--ink);
+}
+.perfil-elo {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f3da90, var(--gold));
+  color: #1c140c;
+  box-shadow: 0 4px 12px -4px rgba(230, 192, 103, 0.75);
+}
+.perfil-elo-rotulo {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  opacity: 0.66;
+}
+.perfil-elo-valor {
+  font-size: 13px;
+  font-weight: 800;
 }
 .toggle {
   padding: 6px 12px;
@@ -756,6 +805,29 @@ a.toggle:hover {
 .auth-box .primario {
   margin-top: 4px;
   padding: 11px;
+}
+/* divisor "ou" entre o formulário e o login com Google */
+.auth-ou {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.auth-ou::before,
+.auth-ou::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--surface-line);
+}
+.botao-google {
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
 }
 .auth-troca {
   margin: 4px 0 0;
