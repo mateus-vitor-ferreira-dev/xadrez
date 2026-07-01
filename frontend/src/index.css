@@ -47,9 +47,9 @@ body::before {
 .app {
   position: relative;
   z-index: 1;
-  max-width: 600px;
+  max-width: 840px;
   margin: 0 auto;
-  padding: 40px 20px 60px;
+  padding: 28px 20px 60px;
   text-align: center;
 }
 
@@ -479,6 +479,127 @@ button.primario:hover:not(:disabled) {
 .voltar:hover:not(:disabled) {
   color: var(--gold);
   border-color: var(--surface-line);
+}
+
+/* ---------- Tema claro ---------- */
+[data-tema='claro'] {
+  --bg: #e8dcc4;
+  --ink: #2a2018;
+  --muted: #6f5d45;
+  --gold: #9a6f1a;
+  --gold-deep: #7d5a12;
+  --surface: rgba(255, 250, 240, 0.72);
+  --surface-line: rgba(120, 90, 40, 0.28);
+}
+[data-tema='claro'] body {
+  background:
+    radial-gradient(1100px 760px at 50% -12%, #f4ecd9 0%, transparent 58%),
+    var(--bg);
+}
+[data-tema='claro'] body::before {
+  opacity: 0.03;
+}
+[data-tema='claro'] h1 {
+  background: linear-gradient(180deg, #b9892a, var(--gold-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------- Barra superior (toggles) ---------- */
+.barra-topo {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.toggle {
+  padding: 6px 12px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ---------- Layout da tela de jogo ---------- */
+.jogo-area {
+  display: flex;
+  gap: 22px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.painel {
+  width: 220px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.capturadas {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.capturadas .tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid var(--surface-line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.capturadas .tray img {
+  width: 22px;
+  height: 22px;
+}
+
+.historico {
+  border: 1px solid var(--surface-line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 10px 14px;
+}
+.historico h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold);
+}
+.historico ol {
+  counter-reset: lance;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: var(--ink);
+}
+.historico li {
+  counter-increment: lance;
+  display: flex;
+  gap: 10px;
+  padding: 2px 0;
+}
+.historico li::before {
+  content: counter(lance) '.';
+  color: var(--muted);
+  min-width: 22px;
+}
+.historico li span {
+  min-width: 54px;
+}
+.historico li.vazio {
+  counter-increment: none;
+  color: var(--muted);
+  font-style: italic;
+}
+.historico li.vazio::before {
+  content: '';
+  min-width: 0;
 }
 
 /* ---------- Animações ---------- */
