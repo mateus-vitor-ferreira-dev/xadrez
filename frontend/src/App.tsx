@@ -12,15 +12,11 @@ import {
   type TipoPromocao,
 } from './api'
 import Tabuleiro from './Tabuleiro'
+import { tocarSom } from './sons'
 
-const LETRA_PROMOCAO: Record<TipoPromocao, string> = {
-  RAINHA: 'd',
-  TORRE: 't',
-  BISPO: 'b',
-  CAVALO: 'c',
-}
-
+const LETRA_PROMOCAO: Record<TipoPromocao, string> = { RAINHA: 'd', TORRE: 't', BISPO: 'b', CAVALO: 'c' }
 const TABULEIRO_INICIAL = 'TCBDRBCTPPPPPPPP................................pppppppptcbdrbct'
+const INICIAIS: Record<string, number> = { p: 8, t: 2, c: 2, b: 2, d: 1, r: 1 }
 
 type Modo = 'humano' | 'ia' | 'online'
 
@@ -49,6 +45,29 @@ function diffLance(antes: string, depois: string): { origem: string; destino: st
   return { origem: not(origem), destino: not(destino) }
 }
 
+/** Peças capturadas, deduzidas do tabuleiro (starting set - peças atuais). */
+function capturadas(tab: string) {
+  const conta = (branca: boolean) => {
+    const c: Record<string, number> = {}
+    for (const ch of tab) {
+      if (ch === '.') continue
+      if ((ch === ch.toUpperCase()) !== branca) continue
+      const t = ch.toLowerCase()
+      c[t] = (c[t] ?? 0) + 1
+    }
+    return c
+  }
+  const faltando = (branca: boolean) => {
+    const atual = conta(branca)
+    const out: string[] = []
+    for (const [t, n] of Object.entries(INICIAIS)) {
+      for (let i = 0; i < n - (atual[t] ?? 0); i++) out.push(t)
+    }
+    return out
+  }
+  return { pretasCapturadas: faltando(false), brancasCapturadas: faltando(true) }
+}
+
 function App() {
   const queryClient = useQueryClient()
   const [idPartida, setIdPartida] = useState<number | null>(null)
@@ -61,6 +80,9 @@ function App() {
   const [minhaCor, setMinhaCor] = useState<Cor | null>(null)
   const [conectado, setConectado] = useState(false)
   const [linkEntrada, setLinkEntrada] = useState('')
+  const [historico, setHistorico] = useState<string[]>([])
+  const [tema, setTema] = useState<'escuro' | 'claro'>(() => (localStorage.getItem('tema') === 'claro' ? 'claro' : 'escuro'))
+  const [mudo, setMudo] = useState<boolean>(() => localStorage.getItem('mudo') === '1')
 
   const partida = useQuery({
     queryKey: ['partida', idPartida],
@@ -78,6 +100,16 @@ function App() {
 
   const fimDeJogo = (e?: EstadoPartida) => !!e && (e.xequeMate || e.afogamento)
 
+  // tema (claro/escuro) aplicado no <html> e persistido
+  useEffect(() => {
+    document.documentElement.dataset.tema = tema
+    localStorage.setItem('tema', tema)
+  }, [tema])
+  useEffect(() => {
+    localStorage.setItem('mudo', mudo ? '1' : '0')
+  }, [mudo])
+
+  // Entrar por ?partida=ID na URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const pid = params.get('partida')
@@ -87,7 +119,26 @@ function App() {
     }
   }, [])
 
-  // WebSocket (STOMP): recebe os lances em tempo real (só no modo online).
+  // Cada vez que o tabuleiro muda: registra o lance no histórico e toca o som.
+  const boardAntesRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!estado) {
+      boardAntesRef.current = null
+      return
+    }
+    const antes = boardAntesRef.current
+    if (antes && antes !== estado.tabuleiro) {
+      const l = diffLance(antes, estado.tabuleiro)
+      if (l) {
+        setHistorico((h) => [...h, `${l.origem}-${l.destino}`])
+        const dIdx = (Number(l.destino[1]) - 1) * 8 + (l.destino.charCodeAt(0) - 97)
+        if (!mudo) tocarSom(antes[dIdx] !== '.' ? 'capturar' : 'mover')
+      }
+    }
+    boardAntesRef.current = estado.tabuleiro
+  }, [estado?.tabuleiro, mudo])
+
+  // WebSocket (STOMP) — tempo real no modo online
   const clienteRef = useRef<Client | null>(null)
   useEffect(() => {
     if (idPartida === null || minhaCor === null) return
@@ -100,9 +151,7 @@ function App() {
           const novo = JSON.parse(msg.body) as EstadoPartida
           const antes = queryClient.getQueryData<EstadoPartida>(['partida', idPartida])
           queryClient.setQueryData(['partida', idPartida], novo)
-          if (antes && antes.tabuleiro !== novo.tabuleiro) {
-            setUltimoLance(diffLance(antes.tabuleiro, novo.tabuleiro))
-          }
+          if (antes && antes.tabuleiro !== novo.tabuleiro) setUltimoLance(diffLance(antes.tabuleiro, novo.tabuleiro))
         })
       },
       onWebSocketClose: () => setConectado(false),
@@ -133,6 +182,8 @@ function App() {
       setUltimoLance(null)
       setPromocaoPendente(null)
       setErro(null)
+      setHistorico([])
+      boardAntesRef.current = null
       if (online) {
         setMinhaCor('BRANCO')
         window.history.replaceState(null, '', `?partida=${e.id}&cor=branco`)
@@ -150,18 +201,14 @@ function App() {
       queryClient.setQueryData(['partida', idPartida], e)
       setUltimoLance({ origem: vars.origem, destino: vars.destino })
       setErro(null)
-      if (modo === 'ia' && minhaCor === null && e.vez === 'PRETO' && !fimDeJogo(e)) {
-        iaMutation.mutate()
-      }
+      if (modo === 'ia' && minhaCor === null && e.vez === 'PRETO' && !fimDeJogo(e)) iaMutation.mutate()
     },
     onError: (e) => setErro(e instanceof Error ? e.message : 'Jogada inválida'),
   })
 
   function pecaEm(notacao: string): string {
     if (!estado) return '.'
-    const coluna = notacao.charCodeAt(0) - 97
-    const linha = Number(notacao[1]) - 1
-    return estado.tabuleiro[linha * 8 + coluna]
+    return estado.tabuleiro[(Number(notacao[1]) - 1) * 8 + (notacao.charCodeAt(0) - 97)]
   }
   function temPecaDaVez(notacao: string): boolean {
     if (!estado) return false
@@ -172,8 +219,8 @@ function App() {
   }
   function ehPromocao(origem: string, destino: string): boolean {
     if (pecaEm(origem).toLowerCase() !== 'p') return false
-    const fileira = Number(destino[1])
-    return fileira === 8 || fileira === 1
+    const f = Number(destino[1])
+    return f === 8 || f === 1
   }
   function casaDoReiEmXeque(): string | null {
     if (!estado || !estado.xeque) return null
@@ -195,11 +242,8 @@ function App() {
       setSelecionada(null)
     } else {
       if (destaques.includes(notacao)) {
-        if (ehPromocao(selecionada, notacao)) {
-          setPromocaoPendente({ origem: selecionada, destino: notacao })
-        } else {
-          fazerJogada.mutate({ origem: selecionada, destino: notacao })
-        }
+        if (ehPromocao(selecionada, notacao)) setPromocaoPendente({ origem: selecionada, destino: notacao })
+        else fazerJogada.mutate({ origem: selecionada, destino: notacao })
       }
       setSelecionada(null)
     }
@@ -211,7 +255,6 @@ function App() {
     setPromocaoPendente(null)
   }
 
-  /** Volta para a tela inicial (encerra a partida atual localmente). */
   function voltar() {
     setIdPartida(null)
     setMinhaCor(null)
@@ -219,10 +262,10 @@ function App() {
     setUltimoLance(null)
     setPromocaoPendente(null)
     setErro(null)
+    setHistorico([])
     window.history.replaceState(null, '', window.location.pathname)
   }
 
-  /** Entra numa partida online a partir de um link colado (aceita URL, query ou id). */
   function entrarPorLink() {
     const txt = linkEntrada.trim()
     const m = txt.match(/partida=(\d+)/)
@@ -243,26 +286,30 @@ function App() {
     idPartida && minhaCor === 'BRANCO'
       ? `${window.location.origin}${window.location.pathname}?partida=${idPartida}&cor=preto`
       : null
-
   const emJogo = idPartida !== null
+  const caps = estado ? capturadas(estado.tabuleiro) : null
 
   return (
     <div className="app">
+      <div className="barra-topo">
+        <button className="toggle" title="Tema" onClick={() => setTema((t) => (t === 'escuro' ? 'claro' : 'escuro'))}>
+          {tema === 'escuro' ? '☀️' : '🌙'}
+        </button>
+        <button className="toggle" title="Som" onClick={() => setMudo((m) => !m)}>
+          {mudo ? '🔇' : '🔊'}
+        </button>
+      </div>
+
       <header className="topo">
         <h1>♟ Xadrez</h1>
         <p className="tagline">Local · contra a IA · online em tempo real</p>
       </header>
 
       {!emJogo ? (
-        // ---------------- TELA INICIAL / LOBBY ----------------
         <div className="lobby">
           <div className="modos">
             {MODOS.map((m) => (
-              <button
-                key={m.id}
-                className={`card-modo${modo === m.id ? ' ativo' : ''}`}
-                onClick={() => setModo(m.id)}
-              >
+              <button key={m.id} className={`card-modo${modo === m.id ? ' ativo' : ''}`} onClick={() => setModo(m.id)}>
                 <span className="icone">{m.icone}</span>
                 <span className="card-titulo">{m.titulo}</span>
                 <span className="card-desc">{m.desc}</span>
@@ -301,18 +348,10 @@ function App() {
           {erro && <p className="status alerta">{erro}</p>}
 
           <div className="tabuleiro-wrap preview">
-            <Tabuleiro
-              tabuleiro={TABULEIRO_INICIAL}
-              selecionada={null}
-              destaques={[]}
-              casaXeque={null}
-              ultimoLance={null}
-              onClicarCasa={() => {}}
-            />
+            <Tabuleiro tabuleiro={TABULEIRO_INICIAL} selecionada={null} destaques={[]} casaXeque={null} ultimoLance={null} onClicarCasa={() => {}} />
           </div>
         </div>
       ) : (
-        // ---------------- TELA DE JOGO ----------------
         <div className="jogo">
           <button className="voltar" onClick={voltar}>
             ← Voltar ao início
@@ -342,15 +381,48 @@ function App() {
             </p>
           )}
 
-          <div className="tabuleiro-wrap">
-            <Tabuleiro
-              tabuleiro={estado?.tabuleiro ?? TABULEIRO_INICIAL}
-              selecionada={selecionada}
-              destaques={destaques}
-              casaXeque={casaDoReiEmXeque()}
-              ultimoLance={ultimoLance}
-              onClicarCasa={clicarCasa}
-            />
+          <div className="jogo-area">
+            <div className="tabuleiro-wrap">
+              <Tabuleiro
+                tabuleiro={estado?.tabuleiro ?? TABULEIRO_INICIAL}
+                selecionada={selecionada}
+                destaques={destaques}
+                casaXeque={casaDoReiEmXeque()}
+                ultimoLance={ultimoLance}
+                onClicarCasa={clicarCasa}
+                girar={minhaCor === 'PRETO'}
+              />
+            </div>
+
+            <aside className="painel">
+              {caps && (
+                <div className="capturadas">
+                  <div className="tray" title="Peças pretas capturadas">
+                    {caps.pretasCapturadas.map((t, i) => (
+                      <img key={`p${i}`} src={`/pecas/b${t}.svg`} alt="" />
+                    ))}
+                  </div>
+                  <div className="tray" title="Peças brancas capturadas">
+                    {caps.brancasCapturadas.map((t, i) => (
+                      <img key={`b${i}`} src={`/pecas/w${t}.svg`} alt="" />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="historico">
+                <h3>Lances</h3>
+                <ol>
+                  {Array.from({ length: Math.ceil(historico.length / 2) }, (_, i) => (
+                    <li key={i}>
+                      <span>{historico[i * 2]}</span>
+                      <span>{historico[i * 2 + 1] ?? ''}</span>
+                    </li>
+                  ))}
+                  {historico.length === 0 && <li className="vazio">Sem lances ainda</li>}
+                </ol>
+              </div>
+            </aside>
           </div>
 
           {erro && <p className="status alerta">{erro}</p>}
@@ -361,11 +433,7 @@ function App() {
               <div className="opcoes">
                 {(Object.keys(LETRA_PROMOCAO) as TipoPromocao[]).map((tipo) => (
                   <button key={tipo} onClick={() => escolherPromocao(tipo)} title={tipo}>
-                    <img
-                      className="peca-opcao"
-                      src={`/pecas/${estado.vez === 'BRANCO' ? 'w' : 'b'}${LETRA_PROMOCAO[tipo]}.svg`}
-                      alt={tipo}
-                    />
+                    <img className="peca-opcao" src={`/pecas/${estado.vez === 'BRANCO' ? 'w' : 'b'}${LETRA_PROMOCAO[tipo]}.svg`} alt={tipo} />
                   </button>
                 ))}
               </div>
