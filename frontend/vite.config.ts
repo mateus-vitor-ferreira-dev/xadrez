@@ -13,6 +13,7 @@ export default defineConfig({
       '/partidas': 'http://localhost:8080',
       '/auth': 'http://localhost:8080',
       '/ranking': 'http://localhost:8080',
+      '/usuario': 'http://localhost:8080',
     },
   },
 })

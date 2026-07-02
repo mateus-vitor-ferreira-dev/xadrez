@@ -146,6 +146,7 @@ public class AuthController {
 
     /** Monta o token + dados públicos do usuário. */
     private TokenResponse tokenPara(Usuario u) {
-        return new TokenResponse(jwtService.gerar(u.getUsuario()), u.getUsuario(), u.getEmail(), u.getElo(), u.isAdmin());
+        String titulo = u.getTituloEquipado() == null ? null : u.getTituloEquipado().name();
+        return new TokenResponse(jwtService.gerar(u.getUsuario()), u.getUsuario(), u.getEmail(), u.getElo(), u.isAdmin(), titulo);
     }
 }

@@ -32,7 +32,12 @@ export default function TabelaRanking({ titulo, subtitulo, linhas, destaque }: P
               <span className="ranking-pos">{i + 1}</span>
               <span className="ranking-nome">
                 <strong>{l.usuario}</strong>
-                <span className="ranking-rank">{l.rank}</span>
+                {/* O título equipado é o "flair" do jogador; sem ele, mostra o rank. */}
+                {l.titulo ? (
+                  <span className="ranking-titulo">{l.titulo}</span>
+                ) : (
+                  <span className="ranking-rank">{l.rank}</span>
+                )}
               </span>
               <span className="ranking-elo">{l.elo}</span>
             </li>
