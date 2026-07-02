@@ -44,9 +44,6 @@ export default function BarraTopo({ tema, onToggleTema, mudo, onToggleMudo }: Ba
         )}
       </div>
       <div className="toggles">
-        <Link className="toggle" to="/como-jogar" title="Como jogar">
-          ❔
-        </Link>
         <Link className="toggle" to="/skins" title="Recompensas (skins e títulos)">
           🎁
         </Link>

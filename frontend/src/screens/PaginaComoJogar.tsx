@@ -70,6 +70,35 @@ const PECAS = [
   { ch: 'R', casa: 'd4', destaques: REI, nome: 'Rei', texto: 'Anda uma casa em qualquer direção. É a peça que você precisa proteger a todo custo.' },
 ]
 
+// Saídas ("aberturas") famosas: cada uma é uma sequência de lances [de, para]
+// aplicada à posição inicial, para o diagrama mostrar como o tabuleiro fica.
+const SAIDAS = [
+  {
+    nome: 'Abertura Italiana',
+    lances: [['e2', 'e4'], ['e7', 'e5'], ['g1', 'f3'], ['b8', 'c6'], ['f1', 'c4']],
+    notacao: '1.e4 e5 2.Cf3 Cc6 3.Bc4',
+    ideia: 'Clássica e direta: ocupa o centro, desenvolve as peças e já mira o ponto fraco f7.',
+  },
+  {
+    nome: 'Ruy López (Espanhola)',
+    lances: [['e2', 'e4'], ['e7', 'e5'], ['g1', 'f3'], ['b8', 'c6'], ['f1', 'b5']],
+    notacao: '1.e4 e5 2.Cf3 Cc6 3.Bb5',
+    ideia: 'O bispo pressiona o cavalo que defende o peão e5. Uma das aberturas mais estudadas da história.',
+  },
+  {
+    nome: 'Defesa Siciliana',
+    lances: [['e2', 'e4'], ['c7', 'c5']],
+    notacao: '1.e4 c5',
+    ideia: 'A resposta mais combativa a 1.e4: as pretas disputam o centro de forma assimétrica, jogando para ganhar.',
+  },
+  {
+    nome: 'Gambito da Dama',
+    lances: [['d2', 'd4'], ['d7', 'd5'], ['c2', 'c4']],
+    notacao: '1.d4 d5 2.c4',
+    ideia: 'As brancas oferecem um peão de flanco para, em troca, dominar o centro do tabuleiro.',
+  },
+]
+
 export default function PaginaComoJogar() {
   return (
     <div className="como-jogar-page">
@@ -190,6 +219,48 @@ export default function PaginaComoJogar() {
       </section>
 
       <section className="manual-secao">
+        <h2>♜ Saídas famosas</h2>
+        <p>
+          Os primeiros lances de uma partida são a <strong>abertura</strong>. Reconhecer algumas ajuda a saber o que
+          fazer no começo — todas seguem a mesma ideia: <strong>ocupar o centro</strong> e <strong>desenvolver as peças</strong>.
+        </p>
+        <div className="manual-pecas">
+          {SAIDAS.map((s) => (
+            <div key={s.nome} className="manual-peca">
+              <Diagrama pecas={posicaoApos(s.lances)} />
+              <div className="manual-peca-info">
+                <strong>{s.nome}</strong>
+                <span className="manual-saida-lances">{s.notacao}</span>
+                <span>{s.ideia}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="manual-secao">
+        <h2>💡 Dicas para começar bem</h2>
+        <ul className="manual-dicas">
+          <li>
+            <strong>Controle o centro.</strong> As casas centrais (e4, d4, e5, d5) dão mobilidade às suas peças.
+          </li>
+          <li>
+            <strong>Desenvolva cedo.</strong> Tire cavalos e bispos para casas ativas; evite mover a mesma peça várias
+            vezes na abertura.
+          </li>
+          <li>
+            <strong>Proteja o rei.</strong> Faça o <em>roque</em> logo para deixá-lo seguro num canto.
+          </li>
+          <li>
+            <strong>Não exponha a dama cedo.</strong> Ela vira alvo fácil e você perde tempo fugindo com ela.
+          </li>
+          <li>
+            <strong>Antes de capturar, conte.</strong> Em cada troca, veja se você não fica perdendo material depois.
+          </li>
+        </ul>
+      </section>
+
+      <section className="manual-secao">
         <h2>📈 Partidas ranqueadas e Elo</h2>
         <p>
           Partidas <strong>online</strong> entre dois jogadores logados são ranqueadas: você ganha ou perde pontos de
@@ -222,6 +293,18 @@ function objetoInicial(): Record<string, string> {
     if (INICIAL[i] === '.') continue
     const casa = String.fromCharCode(97 + (i % 8)) + (Math.floor(i / 8) + 1)
     pecas[casa] = INICIAL[i]
+  }
+  return pecas
+}
+
+// Posição depois de uma sequência de lances [de, para] a partir do início. Só
+// move a peça de uma casa para outra (as saídas aqui não têm capturas), o que
+// basta para os diagramas das aberturas.
+function posicaoApos(lances: string[][]): Record<string, string> {
+  const pecas = objetoInicial()
+  for (const [de, para] of lances) {
+    pecas[para] = pecas[de]
+    delete pecas[de]
   }
   return pecas
 }
