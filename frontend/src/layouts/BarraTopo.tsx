@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import PerfilUsuario from '../components/PerfilUsuario'
 import { useAuth } from '../contexts/auth'
+import { tituloPorId } from '../themes/titulos'
 
 // Barra fixa no topo das telas: identidade do usuário (ou entrar/criar conta) à
 // esquerda e os atalhos globais (skins, tema claro/escuro, som) à direita. Estava
@@ -26,7 +27,7 @@ export default function BarraTopo({ tema, onToggleTema, mudo, onToggleMudo }: Ba
       <div className="usuario-area">
         {auth ? (
           <>
-            <PerfilUsuario usuario={auth.usuario} elo={auth.elo} />
+            <PerfilUsuario usuario={auth.usuario} elo={auth.elo} titulo={tituloPorId(auth.titulo)?.rotulo} />
             <button className="toggle" onClick={sair}>
               Sair
             </button>
@@ -46,8 +47,8 @@ export default function BarraTopo({ tema, onToggleTema, mudo, onToggleMudo }: Ba
         <Link className="toggle" to="/como-jogar" title="Como jogar">
           ❔
         </Link>
-        <Link className="toggle" to="/skins" title="Skins das peças">
-          🎨
+        <Link className="toggle" to="/skins" title="Recompensas (skins e títulos)">
+          🎁
         </Link>
         <button className="toggle" title="Tema" onClick={onToggleTema}>
           {tema === 'escuro' ? '☀️' : '🌙'}

@@ -60,10 +60,14 @@ public class RankingController {
                 .orElse(ELO_PADRAO);
     }
 
-    /** Converte entidades em linhas de tabela, já com o rótulo do rank de cada uma. */
+    /** Converte entidades em linhas de tabela, com o rótulo do rank e o título equipado. */
     private List<RankingResponse.Linha> paraLinhas(List<Usuario> usuarios) {
         return usuarios.stream()
-                .map(u -> new RankingResponse.Linha(u.getUsuario(), u.getElo(), Rank.de(u.getElo()).getRotulo()))
+                .map(u -> new RankingResponse.Linha(
+                        u.getUsuario(),
+                        u.getElo(),
+                        Rank.de(u.getElo()).getRotulo(),
+                        u.getTituloEquipado() == null ? null : u.getTituloEquipado().getRotulo()))
                 .toList();
     }
 }
