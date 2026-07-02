@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
-import type { Autenticacao } from './api'
+import type { Autenticacao } from '../lib/api'
 
 // Antes, o estado de login vivia dentro do App. Agora que login/registro moram
 // em telas (rotas) separadas, a sessão precisa ser COMPARTILHADA entre elas e o

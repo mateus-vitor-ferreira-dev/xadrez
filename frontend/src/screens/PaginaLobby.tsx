@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
-import { buscarRanking, listarPartidasAbertas, novaPartida } from './api'
-import { useAuth } from './auth'
-import TabelaRanking from './TabelaRanking'
-
-// Largura da faixa "perto do meu Elo": pega adversários até 150 pontos acima/abaixo.
-const RAIO_ELO = 150
+import { buscarRanking, listarPartidasAbertas, novaPartida } from '../lib/api'
+import { useAuth } from '../contexts/auth'
+import { RANKS, eloMaxDoRank, indiceDoRank } from '../themes/ranks'
+import TabelaRanking from '../components/TabelaRanking'
 
 /**
  * LOBBY online: lista as salas abertas (gente esperando oponente), com busca por
@@ -17,28 +15,31 @@ export default function PaginaLobby() {
   const { auth } = useAuth()
   const navigate = useNavigate()
 
-  // Faixa de Elo do filtro. Começa centrada no MEU Elo (±RAIO), que é o caso de
-  // uso mais comum: achar oponente do meu nível. String vazia = limite aberto.
-  const [eloMin, setEloMin] = useState('')
-  const [eloMax, setEloMax] = useState('')
+  // Filtro por FAIXA de rank (não Elo solto): o jogador escolhe a faixa mínima e a
+  // máxima (Iniciante…Grande Mestre) e nós convertemos nos limites de Elo. Guardamos
+  // os ÍNDICES em RANKS. Começa na minha própria faixa — o caso de uso mais comum.
+  const [rankMin, setRankMin] = useState(0)
+  const [rankMax, setRankMax] = useState(RANKS.length - 1)
 
   // Jogar online exige conta: sem login, manda para o /login.
   useEffect(() => {
     if (!auth) navigate('/login')
   }, [auth, navigate])
 
-  // Preenche a faixa inicial assim que souber o Elo do usuário (só uma vez).
+  // Centraliza o filtro na minha faixa assim que souber o Elo do usuário.
   useEffect(() => {
     if (auth) {
-      setEloMin(String(Math.max(0, auth.elo - RAIO_ELO)))
-      setEloMax(String(auth.elo + RAIO_ELO))
+      const meuRank = indiceDoRank(auth.elo)
+      setRankMin(meuRank)
+      setRankMax(meuRank)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth?.usuario])
 
-  // Converte os campos de texto em número (ou undefined = limite aberto).
-  const min = eloMin.trim() === '' ? undefined : Number(eloMin)
-  const max = eloMax.trim() === '' ? undefined : Number(eloMax)
+  // Converte a faixa escolhida nos limites de Elo que a API entende: piso da faixa
+  // mínima e teto da faixa máxima (undefined = aberto pra cima, no Grande Mestre).
+  const min = RANKS[rankMin].eloMin
+  const max = eloMaxDoRank(rankMax)
 
   // Lista das salas: refetch a cada 3s para refletir quem entrou/criou/saiu.
   const salas = useQuery({
@@ -70,14 +71,25 @@ export default function PaginaLobby() {
     navigate(`/?partida=${id}&cor=preto`)
   }
 
-  function faixaPertoDeMim() {
+  // Ajusta uma ponta do intervalo mantendo min <= max (mexer numa arrasta a outra).
+  function mudarRankMin(i: number) {
+    setRankMin(i)
+    if (i > rankMax) setRankMax(i)
+  }
+  function mudarRankMax(i: number) {
+    setRankMax(i)
+    if (i < rankMin) setRankMin(i)
+  }
+
+  function faixaMeuNivel() {
     if (!auth) return
-    setEloMin(String(Math.max(0, auth.elo - RAIO_ELO)))
-    setEloMax(String(auth.elo + RAIO_ELO))
+    const meuRank = indiceDoRank(auth.elo)
+    setRankMin(meuRank)
+    setRankMax(meuRank)
   }
   function faixaTodos() {
-    setEloMin('')
-    setEloMax('')
+    setRankMin(0)
+    setRankMax(RANKS.length - 1)
   }
 
   const meuElo = auth?.elo ?? 0
@@ -114,32 +126,33 @@ export default function PaginaLobby() {
           <p className="auth-sub">Encontre um oponente do seu nível (Elo {meuElo}).</p>
         </div>
 
-        {/* Filtro por faixa de Elo. Atalhos preenchem os campos; dá pra editar à mão. */}
+        {/* Filtro por FAIXA de rank. Atalhos ajustam os dois seletores; dá pra
+            escolher a faixa mínima e a máxima à mão. */}
         <div className="lobby-filtro">
           <div className="lobby-chips">
-            <button onClick={faixaPertoDeMim}>Perto de mim (±{RAIO_ELO})</button>
+            <button onClick={faixaMeuNivel}>Meu nível</button>
             <button onClick={faixaTodos}>Todos os níveis</button>
           </div>
           <div className="lobby-faixa">
             <label>
-              Elo de
-              <input
-                type="number"
-                inputMode="numeric"
-                placeholder="0"
-                value={eloMin}
-                onChange={(e) => setEloMin(e.target.value)}
-              />
+              De
+              <select value={rankMin} onChange={(e) => mudarRankMin(Number(e.target.value))}>
+                {RANKS.map((r, i) => (
+                  <option key={r.id} value={i}>
+                    {r.rotulo}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               até
-              <input
-                type="number"
-                inputMode="numeric"
-                placeholder="∞"
-                value={eloMax}
-                onChange={(e) => setEloMax(e.target.value)}
-              />
+              <select value={rankMax} onChange={(e) => mudarRankMax(Number(e.target.value))}>
+                {RANKS.map((r, i) => (
+                  <option key={r.id} value={i}>
+                    {r.rotulo}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
         </div>

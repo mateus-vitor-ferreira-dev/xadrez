@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
 import {
   buscarMovimentos,
@@ -12,16 +12,17 @@ import {
   type Cor,
   type EstadoPartida,
   type TipoPromocao,
-} from './api'
-import Tabuleiro from './Tabuleiro'
-import CarrosselModos from './CarrosselModos'
-import PecaModo from './PecaModo'
-import PerfilUsuario from './PerfilUsuario'
-import TeaserRanking from './TeaserRanking'
-import { useAuth } from './auth'
-import { type Modo } from './modos'
-import * as jogoCache from './jogoCache'
-import { tocarSom } from './sons'
+} from '../lib/api'
+import Tabuleiro from '../components/Tabuleiro'
+import CarrosselModos from '../components/CarrosselModos'
+import PecaModo from '../components/PecaModo'
+import TeaserRanking from '../components/TeaserRanking'
+import BarraTopo from '../layouts/BarraTopo'
+import { PecaSvg } from '../contexts/skin'
+import { useAuth } from '../contexts/auth'
+import { type Modo } from '../lib/modos'
+import * as jogoCache from '../lib/jogoCache'
+import { tocarSom } from '../lib/sons'
 
 const LETRA_PROMOCAO: Record<TipoPromocao, string> = { RAINHA: 'd', TORRE: 't', BISPO: 'b', CAVALO: 'c' }
 const TABULEIRO_INICIAL = 'TCBDRBCTPPPPPPPP................................pppppppptcbdrbct'
@@ -93,7 +94,7 @@ function App() {
   const [tema, setTema] = useState<'escuro' | 'claro'>(() => (localStorage.getItem('tema') === 'claro' ? 'claro' : 'escuro'))
   const [mudo, setMudo] = useState<boolean>(() => localStorage.getItem('mudo') === '1')
   // A sessão agora mora no AuthProvider (compartilhada com as telas /login e /registro).
-  const { auth, sair, atualizarElo } = useAuth()
+  const { auth, atualizarElo } = useAuth()
   const navigate = useNavigate()
 
   const partida = useQuery({
@@ -396,35 +397,12 @@ function App() {
 
   return (
     <div className="app">
-      <div className="barra-topo">
-        <div className="usuario-area">
-          {auth ? (
-            <>
-              <PerfilUsuario usuario={auth.usuario} elo={auth.elo} />
-              <button className="toggle" onClick={sair}>
-                Sair
-              </button>
-            </>
-          ) : (
-            <>
-              <Link className="toggle" to="/login">
-                Entrar
-              </Link>
-              <Link className="toggle" to="/registro">
-                Criar conta
-              </Link>
-            </>
-          )}
-        </div>
-        <div className="toggles">
-          <button className="toggle" title="Tema" onClick={() => setTema((t) => (t === 'escuro' ? 'claro' : 'escuro'))}>
-            {tema === 'escuro' ? '☀️' : '🌙'}
-          </button>
-          <button className="toggle" title="Som" onClick={() => setMudo((m) => !m)}>
-            {mudo ? '🔇' : '🔊'}
-          </button>
-        </div>
-      </div>
+      <BarraTopo
+        tema={tema}
+        onToggleTema={() => setTema((t) => (t === 'escuro' ? 'claro' : 'escuro'))}
+        mudo={mudo}
+        onToggleMudo={() => setMudo((m) => !m)}
+      />
 
       {/* Na tela inicial o cabeçalho é o "hero" grande; dentro do jogo ele encolhe
           (sem tagline) para o tabuleiro caber na tela sem rolar. */}
@@ -571,7 +549,7 @@ function App() {
                       <span className="captura-rotulo">Brancas</span>
                       <div className="captura-pilha" title="Peças capturadas pelas brancas">
                         {caps.pretasCapturadas.map((t, i) => (
-                          <img key={`p${i}`} className="captura-peca" src={`/pecas/b${t}.svg`} alt="" />
+                          <PecaSvg key={`p${i}`} code={`b${t}`} className="captura-peca" />
                         ))}
                         {caps.vantagem > 0 && <span className="vantagem">+{caps.vantagem}</span>}
                       </div>
@@ -582,7 +560,7 @@ function App() {
                       <span className="captura-rotulo">Pretas</span>
                       <div className="captura-pilha" title="Peças capturadas pelas pretas">
                         {caps.brancasCapturadas.map((t, i) => (
-                          <img key={`b${i}`} className="captura-peca" src={`/pecas/w${t}.svg`} alt="" />
+                          <PecaSvg key={`b${i}`} code={`w${t}`} className="captura-peca" />
                         ))}
                         {caps.vantagem < 0 && <span className="vantagem">+{-caps.vantagem}</span>}
                       </div>
@@ -601,7 +579,7 @@ function App() {
               <div className="opcoes">
                 {(Object.keys(LETRA_PROMOCAO) as TipoPromocao[]).map((tipo) => (
                   <button key={tipo} onClick={() => escolherPromocao(tipo)} title={tipo}>
-                    <img className="peca-opcao" src={`/pecas/${estado.vez === 'BRANCO' ? 'w' : 'b'}${LETRA_PROMOCAO[tipo]}.svg`} alt={tipo} />
+                    <PecaSvg code={`${estado.vez === 'BRANCO' ? 'w' : 'b'}${LETRA_PROMOCAO[tipo]}`} className="peca-opcao" />
                   </button>
                 ))}
               </div>
