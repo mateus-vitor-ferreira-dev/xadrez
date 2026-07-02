@@ -31,8 +31,26 @@ public class Usuario {
     @Column(nullable = false)
     private String senha;
 
+    /** Elo inicial: todo mundo começa na faixa Iniciante e sobe jogando. */
+    public static final int ELO_INICIAL = 800;
+
     @Column(nullable = false)
-    private int elo = 1200;
+    private int elo = ELO_INICIAL;
+
+    /**
+     * Quantas partidas ranqueadas (online, entre 2 logados) o jogador já
+     * disputou. Enquanto for baixo, o Elo usa um K maior ("provisório"), para o
+     * jogador chegar rápido ao seu nível real. Ver {@code CalculadoraElo}.
+     */
+    @Column(nullable = false)
+    private int jogosRanqueados = 0;
+
+    /**
+     * Vitórias consecutivas em partidas ranqueadas. Emendar vitórias dá um bônus
+     * modesto de Elo (ver {@code CalculadoraElo.bonusStreak}). Zera ao empatar ou perder.
+     */
+    @Column(nullable = false)
+    private int vitoriasSeguidas = 0;
 
     protected Usuario() {
     }
@@ -41,7 +59,7 @@ public class Usuario {
         this.usuario = usuario;
         this.email = email;
         this.senha = senhaHash;
-        this.elo = 1200;
+        this.elo = ELO_INICIAL;
     }
 
     public Long getId() {
@@ -66,5 +84,21 @@ public class Usuario {
 
     public void setElo(int elo) {
         this.elo = elo;
+    }
+
+    public int getJogosRanqueados() {
+        return jogosRanqueados;
+    }
+
+    public void setJogosRanqueados(int jogosRanqueados) {
+        this.jogosRanqueados = jogosRanqueados;
+    }
+
+    public int getVitoriasSeguidas() {
+        return vitoriasSeguidas;
+    }
+
+    public void setVitoriasSeguidas(int vitoriasSeguidas) {
+        this.vitoriasSeguidas = vitoriasSeguidas;
     }
 }

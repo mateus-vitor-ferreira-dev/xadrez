@@ -193,14 +193,43 @@ public class PartidaService {
         Usuario branco = talvezBranco.get();
         Usuario preto = talvezPreto.get();
 
-        CalculadoraElo.Variacao v = CalculadoraElo.novosRatings(branco.getElo(), preto.getElo(), resultado);
-        branco.setElo(v.eloBranco());
-        preto.setElo(v.eloPreto());
+        // K por lado: cada jogador pode estar na fase provisória (K maior) ou não.
+        int kBranco = CalculadoraElo.kDe(branco.getJogosRanqueados());
+        int kPreto = CalculadoraElo.kDe(preto.getJogosRanqueados());
+        CalculadoraElo.Variacao v = CalculadoraElo.novosRatings(
+                branco.getElo(), preto.getElo(), resultado, kBranco, kPreto);
+
+        int novoBranco = v.eloBranco();
+        int novoPreto = v.eloPreto();
+        int deltaBranco = v.deltaBranco();
+        int deltaPreto = v.deltaPreto();
+
+        // Sequência de vitórias: só vitória estende; empate/derrota zeram.
+        boolean brancoVenceu = resultado == Resultado.VITORIA_BRANCO;
+        boolean pretoVenceu = resultado == Resultado.VITORIA_PRETO;
+        branco.setVitoriasSeguidas(brancoVenceu ? branco.getVitoriasSeguidas() + 1 : 0);
+        preto.setVitoriasSeguidas(pretoVenceu ? preto.getVitoriasSeguidas() + 1 : 0);
+
+        // Bônus de maré (só para o vencedor, sobre o streak já atualizado).
+        if (brancoVenceu) {
+            int bonus = CalculadoraElo.bonusStreak(branco.getVitoriasSeguidas());
+            novoBranco += bonus;
+            deltaBranco += bonus;
+        } else if (pretoVenceu) {
+            int bonus = CalculadoraElo.bonusStreak(preto.getVitoriasSeguidas());
+            novoPreto += bonus;
+            deltaPreto += bonus;
+        }
+
+        branco.setElo(novoBranco);
+        preto.setElo(novoPreto);
+        branco.setJogosRanqueados(branco.getJogosRanqueados() + 1);
+        preto.setJogosRanqueados(preto.getJogosRanqueados() + 1);
         usuarios.save(branco);
         usuarios.save(preto);
 
-        entity.setDeltaBranco(v.deltaBranco());
-        entity.setDeltaPreto(v.deltaPreto());
+        entity.setDeltaBranco(deltaBranco);
+        entity.setDeltaPreto(deltaPreto);
         entity.setEloAplicado(true);
     }
 
