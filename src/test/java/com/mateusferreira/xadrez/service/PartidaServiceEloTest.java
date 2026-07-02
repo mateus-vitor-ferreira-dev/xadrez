@@ -30,7 +30,7 @@ class PartidaServiceEloTest {
 
     @Test
     void partidaOnline_aplicaEloAoTerminar() {
-        // Dois jogadores começam com o mesmo rating padrão (1200).
+        // Dois jogadores começam com o mesmo rating inicial (800, faixa Iniciante).
         usuarios.save(new Usuario("branco_teste", "branco@teste.com", "hash"));
         usuarios.save(new Usuario("preto_teste", "preto@teste.com", "hash"));
 
@@ -45,11 +45,16 @@ class PartidaServiceEloTest {
         assertThat(fim.partida().estaEmXequeMate(fim.partida().getJogadorAtual())).isTrue();
         assertThat(fim.resultado()).isEqualTo(Resultado.VITORIA_PRETO);
 
-        // Ratings iguais => vencedor +16, perdedor -16.
-        assertThat(usuarios.findByUsuario("preto_teste").orElseThrow().getElo()).isEqualTo(1216);
-        assertThat(usuarios.findByUsuario("branco_teste").orElseThrow().getElo()).isEqualTo(1184);
-        assertThat(fim.deltaPreto()).isEqualTo(16);
-        assertThat(fim.deltaBranco()).isEqualTo(-16);
+        // 1ª partida de ambos => K provisório (64). Ratings iguais => vencedor +32,
+        // perdedor -32. Streak = 1 (sem bônus, que só começa na 3ª vitória seguida).
+        assertThat(usuarios.findByUsuario("preto_teste").orElseThrow().getElo()).isEqualTo(832);
+        assertThat(usuarios.findByUsuario("branco_teste").orElseThrow().getElo()).isEqualTo(768);
+        assertThat(fim.deltaPreto()).isEqualTo(32);
+        assertThat(fim.deltaBranco()).isEqualTo(-32);
+        // O contador de jogos ranqueados sobe para os dois.
+        assertThat(usuarios.findByUsuario("preto_teste").orElseThrow().getJogosRanqueados()).isEqualTo(1);
+        assertThat(usuarios.findByUsuario("preto_teste").orElseThrow().getVitoriasSeguidas()).isEqualTo(1);
+        assertThat(usuarios.findByUsuario("branco_teste").orElseThrow().getVitoriasSeguidas()).isEqualTo(0);
     }
 
     @Test

@@ -32,13 +32,14 @@ class AuthControllerTest {
     }
 
     @Test
-    void cadastroRetornaTokenEElo1200() throws Exception {
+    void cadastroRetornaTokenEEloInicial() throws Exception {
+        // Todo novo jogador nasce na faixa Iniciante (Elo 800).
         registrar("jogador_a", "a@teste.com", "senha123")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists())
                 .andExpect(jsonPath("$.usuario").value("jogador_a"))
                 .andExpect(jsonPath("$.email").value("a@teste.com"))
-                .andExpect(jsonPath("$.elo").value(1200));
+                .andExpect(jsonPath("$.elo").value(800));
     }
 
     @Test

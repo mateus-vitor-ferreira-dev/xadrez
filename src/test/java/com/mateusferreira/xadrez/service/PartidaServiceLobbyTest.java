@@ -106,4 +106,18 @@ class PartidaServiceLobbyTest {
         service.entrar(sala, "lobby_rival");
         assertThat(contemSala(service.partidasAbertas("lobby_outro", null, null), sala)).isFalse();
     }
+
+    @Test
+    void criarNovaSalaRemoveAsSalasAbertasAnterioresDoMesmoCriador() {
+        criarUsuario("lobby_spammer", 1200);
+        Long sala1 = abrirSala("lobby_spammer");
+        Long sala2 = abrirSala("lobby_spammer");
+        Long sala3 = abrirSala("lobby_spammer");
+
+        // "Uma sala aberta por criador": só a última sobrevive; as anteriores somem.
+        List<PartidaAberta> abertas = service.partidasAbertas("lobby_outro", null, null);
+        assertThat(contemSala(abertas, sala1)).isFalse();
+        assertThat(contemSala(abertas, sala2)).isFalse();
+        assertThat(contemSala(abertas, sala3)).isTrue();
+    }
 }
