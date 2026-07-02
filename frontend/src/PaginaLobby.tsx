@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
-import { listarPartidasAbertas, novaPartida } from './api'
+import { buscarRanking, listarPartidasAbertas, novaPartida } from './api'
 import { useAuth } from './auth'
+import TabelaRanking from './TabelaRanking'
 
 // Largura da faixa "perto do meu Elo": pega adversários até 150 pontos acima/abaixo.
 const RAIO_ELO = 150
@@ -47,6 +48,16 @@ export default function PaginaLobby() {
     refetchInterval: 3000,
   })
 
+  // Ranking das laterais: as duas tabelas vêm juntas do /ranking. Atualiza a cada
+  // 10s (muda mais devagar que as salas) e depende do usuário na queryKey, para
+  // recarregar a faixa "do meu rank" ao trocar de conta.
+  const ranking = useQuery({
+    queryKey: ['ranking', auth?.usuario],
+    queryFn: buscarRanking,
+    enabled: !!auth,
+    refetchInterval: 10000,
+  })
+
   // Criar sala: nasce como partida online (eu = brancas) e vou para o jogo,
   // onde espero o oponente. A sala aparece no lobby dos outros na hora.
   const criar = useMutation({
@@ -87,7 +98,17 @@ export default function PaginaLobby() {
         ← Voltar ao jogo
       </Link>
 
-      <div className="lobby-box">
+      {/* 3 colunas: top do site (esq.) | salas (centro) | top do meu rank (dir.).
+          As tabelas ficam nas laterais em telas largas e empilham no mobile (CSS). */}
+      <div className="lobby-3col">
+        <TabelaRanking
+          titulo="🏆 Top do site"
+          subtitulo="Maiores pontuadores"
+          linhas={ranking.data?.topSite ?? []}
+          destaque={auth.usuario}
+        />
+
+        <div className="lobby-box">
         <div className="lobby-cabecalho">
           <h2>Salas online</h2>
           <p className="auth-sub">Encontre um oponente do seu nível (Elo {meuElo}).</p>
@@ -152,6 +173,14 @@ export default function PaginaLobby() {
         <button className="primario grande" onClick={() => criar.mutate()} disabled={criar.isPending}>
           {criar.isPending ? 'Criando sala…' : '+ Criar sala'}
         </button>
+      </div>
+
+        <TabelaRanking
+          titulo="⭐ Seu rank"
+          subtitulo={ranking.data ? `${ranking.data.meuRank} · Elo ${ranking.data.meuElo}` : undefined}
+          linhas={ranking.data?.topRank ?? []}
+          destaque={auth.usuario}
+        />
       </div>
     </div>
   )
