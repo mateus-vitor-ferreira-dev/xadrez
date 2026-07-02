@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { googleLogin, login, registrar } from '../lib/api'
 import { useAuth } from '../contexts/auth'
 import BotaoGoogle from '../components/BotaoGoogle'
@@ -13,6 +13,9 @@ import BotaoGoogle from '../components/BotaoGoogle'
  */
 export default function PaginaAuth({ modo }: { modo: 'login' | 'registro' }) {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  // A sessão expirou (o api.ts redireciona para /login?expirada=1 ao ver um 401).
+  const expirada = modo === 'login' && params.get('expirada') === '1'
   const { definir } = useAuth()
   // No login, `usuario` guarda o identificador (e-mail OU apelido); no cadastro,
   // é o apelido, e o e-mail vai no campo próprio.
@@ -87,6 +90,8 @@ export default function PaginaAuth({ modo }: { modo: 'login' | 'registro' }) {
             ? 'Acesse para acumular Elo nas partidas online.'
             : 'Crie sua conta e comece com Elo 1200.'}
         </p>
+
+        {expirada && <p className="status alerta">Sua sessão expirou. Entre novamente para continuar.</p>}
 
         <input
           placeholder={ehLogin ? 'E-mail ou usuário' : 'Usuário'}

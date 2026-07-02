@@ -61,6 +61,35 @@ function comAuth(extra?: Record<string, string>): Record<string, string> {
   return h
 }
 
+/**
+ * Sessão expirada/inválida: um 401 numa chamada que EXIGE login significa que o
+ * token não vale mais (o JWT expira em 24h, ou foi revogado). Antes o front
+ * confiava no `auth` do localStorage para sempre e o usuário ficava preso numa
+ * tela de erro. Agora limpamos a sessão e mandamos re-logar, sinalizando com
+ * ?expirada=1 para a tela de login explicar o motivo.
+ */
+function sessaoExpirada(): never {
+  localStorage.removeItem('auth')
+  if (!location.pathname.startsWith('/login')) {
+    location.assign('/login?expirada=1')
+  }
+  throw new Error('Sua sessão expirou. Entre novamente.')
+}
+
+/**
+ * fetch para endpoints que EXIGEM login: já anexa o Bearer e trata 401 como
+ * sessão expirada (limpa + redireciona). Não use em rotas que aceitam anônimo —
+ * lá um 401 teria outro significado.
+ */
+async function fetchAuth(url: string, init: RequestInit = {}): Promise<Response> {
+  const resposta = await fetch(url, {
+    ...init,
+    headers: comAuth(init.headers as Record<string, string> | undefined),
+  })
+  if (resposta.status === 401) sessaoExpirada()
+  return resposta
+}
+
 async function lerOuFalhar(resposta: Response): Promise<EstadoPartida> {
   if (!resposta.ok) {
     const corpo = await resposta.json().catch(() => null)
@@ -142,9 +171,9 @@ export async function buscarRanking(): Promise<Ranking> {
  * (mesmo formato do login), para o front regravar o auth.
  */
 export async function equiparTitulo(titulo: string | null): Promise<Autenticacao> {
-  const resposta = await fetch(`${API}/usuario/titulo`, {
+  const resposta = await fetchAuth(`${API}/usuario/titulo`, {
     method: 'PUT',
-    headers: comAuth({ 'Content-Type': 'application/json' }),
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ titulo }),
   })
   if (!resposta.ok) throw new Error(`Erro ${resposta.status}`)
@@ -165,7 +194,7 @@ export interface Perfil {
 
 /** Busca o perfil atual do usuário logado (para preencher o formulário). */
 export async function buscarPerfil(): Promise<Perfil> {
-  const resposta = await fetch(`${API}/usuario/perfil`, { headers: comAuth() })
+  const resposta = await fetchAuth(`${API}/usuario/perfil`)
   if (!resposta.ok) throw new Error(`Erro ${resposta.status}`)
   return resposta.json() as Promise<Perfil>
 }
@@ -179,9 +208,9 @@ export async function atualizarPerfil(dados: {
   telefone: string | null
   fotoUrl: string | null
 }): Promise<Perfil> {
-  const resposta = await fetch(`${API}/usuario/perfil`, {
+  const resposta = await fetchAuth(`${API}/usuario/perfil`, {
     method: 'PUT',
-    headers: comAuth({ 'Content-Type': 'application/json' }),
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dados),
   })
   if (!resposta.ok) {
