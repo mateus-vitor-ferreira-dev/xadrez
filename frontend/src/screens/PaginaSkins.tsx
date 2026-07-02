@@ -6,21 +6,23 @@ import { useSkin } from '../contexts/skin'
 import { PecaSvg } from '../contexts/skin'
 import { TEMAS, desbloqueado } from '../themes/skins'
 import { TITULOS, tituloLiberado } from '../themes/titulos'
+import { TABULEIROS, tabuleiroLiberado } from '../themes/tabuleiros'
 import { equiparTitulo } from '../lib/api'
 
-// Hub de RECOMPENSAS (rota /skins): duas abas — "Peças" (skins do tabuleiro,
-// client-side) e "Títulos" (o brinde público do caminho de troféus, salvo no
-// servidor). Tudo é desbloqueado pelo rank; a conta admin libera tudo.
+// Hub de RECOMPENSAS (rota /skins): três abas — "Peças" (skins do tabuleiro,
+// client-side), "Títulos" (brinde público do caminho de troféus, salvo no
+// servidor) e "Tabuleiro" (cores das casas, client-side). Tudo desbloqueado
+// pelo rank; a conta admin libera tudo.
 
 // Peças mostradas na prévia da skin: rei e peão de cada lado (contraste claro/escuro).
 const PREVIA = ['wr', 'wp', 'bp', 'br']
 
 export default function PaginaSkins() {
   const { auth, definir } = useAuth()
-  const { tema: equipado, equipar } = useSkin()
+  const { tema: equipado, equipar, tabuleiro: tabEquipado, equiparTabuleiro } = useSkin()
   const meuElo = auth?.elo ?? 0
   const admin = auth?.admin ?? false
-  const [aba, setAba] = useState<'pecas' | 'titulos'>('pecas')
+  const [aba, setAba] = useState<'pecas' | 'titulos' | 'tabuleiro'>('pecas')
 
   // Equipar título vai ao servidor (é público). Sucesso -> regrava a sessão.
   const equiparTit = useMutation({
@@ -38,10 +40,10 @@ export default function PaginaSkins() {
         <h2>🎁 Recompensas</h2>
         <p className="auth-sub">
           {admin
-            ? '👑 Conta admin: skins e títulos todos liberados.'
+            ? '👑 Conta admin: tudo liberado.'
             : auth
-              ? `Skins e títulos são liberados conforme você sobe de rank (seu Elo: ${meuElo}).`
-              : 'Skins e títulos são liberados conforme você sobe de rank. Faça login para desbloquear pelas suas vitórias.'}
+              ? `Skins, títulos e tabuleiros são liberados conforme você sobe de rank (seu Elo: ${meuElo}).`
+              : 'Skins, títulos e tabuleiros são liberados conforme você sobe de rank. Faça login para desbloquear pelas suas vitórias.'}
         </p>
       </div>
 
@@ -52,9 +54,12 @@ export default function PaginaSkins() {
         <button className={aba === 'titulos' ? 'ativo' : ''} onClick={() => setAba('titulos')}>
           🏅 Títulos
         </button>
+        <button className={aba === 'tabuleiro' ? 'ativo' : ''} onClick={() => setAba('tabuleiro')}>
+          🏁 Tabuleiro
+        </button>
       </div>
 
-      {aba === 'pecas' ? (
+      {aba === 'pecas' && (
         <div className="skins-grid">
           {TEMAS.map((t) => {
             const liberado = desbloqueado(t, meuElo, admin)
@@ -85,7 +90,9 @@ export default function PaginaSkins() {
             )
           })}
         </div>
-      ) : (
+      )}
+
+      {aba === 'titulos' && (
         <div className="titulos-grid">
           {!auth && <p className="titulos-aviso">Entre para desbloquear e equipar títulos.</p>}
           {equiparTit.isError && <p className="status alerta">Não foi possível equipar o título. Tente de novo.</p>}
@@ -120,6 +127,43 @@ export default function PaginaSkins() {
                   </button>
                 ) : (
                   <span className="skin-cadeado">🔒 {t.rank}</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {aba === 'tabuleiro' && (
+        <div className="skins-grid">
+          {TABULEIROS.map((t) => {
+            const liberado = tabuleiroLiberado(t, meuElo, admin)
+            const ativo = t.id === tabEquipado.id
+            return (
+              <div key={t.id} className={`skin-card${ativo ? ' equipado' : ''}${liberado ? '' : ' bloqueado'}`}>
+                {/* Prévia: mini-tabuleiro 4×4 com as duas cores do tema. */}
+                <div className="tab-previa">
+                  {Array.from({ length: 16 }, (_, i) => {
+                    const linha = Math.floor(i / 4)
+                    const coluna = i % 4
+                    const cor = (linha + coluna) % 2 === 0 ? t.claro : t.escuro
+                    return <span key={i} style={{ background: cor }} />
+                  })}
+                </div>
+                <div className="skin-info">
+                  <strong>{t.nome}</strong>
+                  <span className="skin-req">{t.eloMin === 0 ? 'Padrão' : `${t.rankNome} · Elo ${t.eloMin}`}</span>
+                </div>
+                {liberado ? (
+                  <button
+                    className={ativo ? 'skin-btn ativo' : 'skin-btn primario'}
+                    disabled={ativo}
+                    onClick={() => equiparTabuleiro(t.id)}
+                  >
+                    {ativo ? '✓ Equipado' : 'Equipar'}
+                  </button>
+                ) : (
+                  <span className="skin-cadeado">🔒 {t.rankNome}</span>
                 )}
               </div>
             )
