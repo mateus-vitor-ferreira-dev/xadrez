@@ -2,6 +2,7 @@ package com.mateusferreira.xadrez.controller;
 
 import com.mateusferreira.xadrez.controller.dto.EstadoPartidaResponse;
 import com.mateusferreira.xadrez.controller.dto.JogadaRequest;
+import com.mateusferreira.xadrez.controller.dto.PartidaAbertaResponse;
 import com.mateusferreira.xadrez.dominio.Posicao;
 import com.mateusferreira.xadrez.dominio.TipoPromocao;
 import com.mateusferreira.xadrez.service.PartidaService;
@@ -62,6 +63,21 @@ public class PartidaController {
                                              Principal principal) {
         ResultadoPartida r = service.novaPartida(online, nomeUsuario(principal));
         return EstadoPartidaResponse.de(r);
+    }
+
+    /**
+     * GET /partidas/abertas -> LOBBY: salas online aguardando oponente, com o
+     * criador e o Elo dele. Filtra pela faixa ?eloMin=&eloMax= (ambos opcionais)
+     * e esconde as salas do próprio jogador logado.
+     */
+    @GetMapping("/abertas")
+    public List<PartidaAbertaResponse> partidasAbertas(@RequestParam(required = false) Integer eloMin,
+                                                       @RequestParam(required = false) Integer eloMax,
+                                                       Principal principal) {
+        return service.partidasAbertas(nomeUsuario(principal), eloMin, eloMax)
+                .stream()
+                .map(PartidaAbertaResponse::de)
+                .toList();
     }
 
     /**

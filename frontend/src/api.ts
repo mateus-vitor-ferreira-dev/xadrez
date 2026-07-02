@@ -80,6 +80,53 @@ export async function buscarPartida(id: number): Promise<EstadoPartida> {
   return lerOuFalhar(await fetch(`${BASE}/${id}`, { headers: comAuth() }))
 }
 
+/** Uma sala aberta do lobby: alguém esperando oponente (o criador joga de brancas). */
+export interface PartidaAberta {
+  id: number
+  criador: string
+  elo: number
+}
+
+/**
+ * Lista as salas abertas (lobby), opcionalmente filtrando pela faixa de Elo do
+ * criador. Passa o token para o back esconder as suas próprias salas.
+ */
+export async function listarPartidasAbertas(eloMin?: number, eloMax?: number): Promise<PartidaAberta[]> {
+  const q = new URLSearchParams()
+  if (eloMin != null) q.set('eloMin', String(eloMin))
+  if (eloMax != null) q.set('eloMax', String(eloMax))
+  const sufixo = q.toString() ? `?${q}` : ''
+  const resposta = await fetch(`${BASE}/abertas${sufixo}`, { headers: comAuth() })
+  if (!resposta.ok) throw new Error(`Erro ${resposta.status}`)
+  return resposta.json() as Promise<PartidaAberta[]>
+}
+
+// ---------- Ranking (leaderboards) ----------
+/** Uma linha de tabela do ranking: apelido, Elo e o rótulo do rank do jogador. */
+export interface LinhaRanking {
+  usuario: string
+  elo: number
+  rank: string
+}
+
+/** Resposta do /ranking: as duas tabelas + a faixa do usuário (para o título da direita). */
+export interface Ranking {
+  meuRank: string
+  meuElo: number
+  topSite: LinhaRanking[]
+  topRank: LinhaRanking[]
+}
+
+/**
+ * Busca as duas tabelas de ranking numa só chamada. Manda o token (se houver)
+ * para o back escolher a faixa da tabela da direita pelo Elo do usuário logado.
+ */
+export async function buscarRanking(): Promise<Ranking> {
+  const resposta = await fetch(`${API}/ranking`, { headers: comAuth() })
+  if (!resposta.ok) throw new Error(`Erro ${resposta.status}`)
+  return resposta.json() as Promise<Ranking>
+}
+
 export async function jogadaIA(id: number, nivel: number): Promise<EstadoPartida> {
   return lerOuFalhar(await fetch(`${BASE}/${id}/jogada-ia?nivel=${nivel}`, { method: 'POST', headers: comAuth() }))
 }

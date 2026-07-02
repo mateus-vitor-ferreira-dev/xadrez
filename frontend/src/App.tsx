@@ -17,6 +17,7 @@ import Tabuleiro from './Tabuleiro'
 import CarrosselModos from './CarrosselModos'
 import PecaModo from './PecaModo'
 import PerfilUsuario from './PerfilUsuario'
+import TeaserRanking from './TeaserRanking'
 import { useAuth } from './auth'
 import { type Modo } from './modos'
 import * as jogoCache from './jogoCache'
@@ -325,13 +326,9 @@ function App() {
   /** Ação do botão principal do lobby — muda conforme o modo (e o login, no online). */
   function acaoPrincipal() {
     if (modo === 'online') {
-      // Jogar online exige conta. Sem login, vai para /login; com login, cria a
-      // partida online (futuramente: lobby de salas por Elo).
-      if (!auth) {
-        navigate('/login')
-        return
-      }
-      criar.mutate(true)
+      // Jogar online exige conta. Sem login, vai para /login; com login, abre o
+      // lobby de salas por Elo (onde dá para criar a sua ou entrar em uma).
+      navigate(auth ? '/lobby' : '/login')
       return
     }
     criar.mutate(false) // humano ou IA: sem login
@@ -459,12 +456,18 @@ function App() {
             </div>
 
             {erro && <p className="status alerta">{erro}</p>}
+
+            {/* Chamariz: mini-pódio do site + CTA pro online. Some sozinho se
+                ainda não há ninguém pontuando (ver TeaserRanking). */}
+            <TeaserRanking />
           </div>
         </div>
       ) : (
         <div className="jogo">
-          <button className="voltar" onClick={voltar}>
-            ← Voltar ao início
+          {/* Num jogo online voltamos para o LOBBY (achar outro oponente); num
+              jogo local, para o menu inicial. */}
+          <button className="voltar" onClick={estado?.online ? () => navigate('/lobby') : voltar}>
+            {estado?.online ? '← Voltar às salas' : '← Voltar ao início'}
           </button>
 
           {minhaCor !== null && (
@@ -501,6 +504,35 @@ function App() {
           )}
 
           <div className="jogo-area">
+            {/* ESQUERDA: histórico recolhível, com colunas por cor. */}
+            <aside className="painel painel-esq">
+              <details className="historico" open={historico.length > 0}>
+                <summary>
+                  <span>Histórico de lances</span>
+                  <span className="contador">{historico.length}</span>
+                </summary>
+                {historico.length === 0 ? (
+                  <p className="vazio">Sem lances ainda.</p>
+                ) : (
+                  <>
+                    <div className="historico-cab">
+                      <span>Brancas</span>
+                      <span>Pretas</span>
+                    </div>
+                    <ol>
+                      {Array.from({ length: Math.ceil(historico.length / 2) }, (_, i) => (
+                        <li key={i}>
+                          <span className="lance lance-b">{historico[i * 2]}</span>
+                          <span className="lance lance-p">{historico[i * 2 + 1] ?? ''}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </>
+                )}
+              </details>
+            </aside>
+
+            {/* CENTRO: tabuleiro (inalterado). */}
             <div className="tabuleiro-wrap">
               <Tabuleiro
                 tabuleiro={estado?.tabuleiro ?? TABULEIRO_INICIAL}
@@ -513,46 +545,34 @@ function App() {
               />
             </div>
 
-            <aside className="painel">
+            {/* DIREITA: material capturado, em pilha sobreposta por lado. */}
+            <aside className="painel painel-dir">
               {caps && (caps.pretasCapturadas.length > 0 || caps.brancasCapturadas.length > 0) && (
                 <div className="material">
                   {caps.pretasCapturadas.length > 0 && (
-                    <div className="linha-captura" title="Peças capturadas pelas brancas">
-                      {caps.pretasCapturadas.map((t, i) => (
-                        <img key={`p${i}`} src={`/pecas/b${t}.svg`} alt="" />
-                      ))}
-                      {caps.vantagem > 0 && <span className="vantagem">+{caps.vantagem}</span>}
+                    <div className="captura-lado">
+                      <span className="captura-rotulo">Brancas</span>
+                      <div className="captura-pilha" title="Peças capturadas pelas brancas">
+                        {caps.pretasCapturadas.map((t, i) => (
+                          <img key={`p${i}`} className="captura-peca" src={`/pecas/b${t}.svg`} alt="" />
+                        ))}
+                        {caps.vantagem > 0 && <span className="vantagem">+{caps.vantagem}</span>}
+                      </div>
                     </div>
                   )}
                   {caps.brancasCapturadas.length > 0 && (
-                    <div className="linha-captura" title="Peças capturadas pelas pretas">
-                      {caps.brancasCapturadas.map((t, i) => (
-                        <img key={`b${i}`} src={`/pecas/w${t}.svg`} alt="" />
-                      ))}
-                      {caps.vantagem < 0 && <span className="vantagem">+{-caps.vantagem}</span>}
+                    <div className="captura-lado">
+                      <span className="captura-rotulo">Pretas</span>
+                      <div className="captura-pilha" title="Peças capturadas pelas pretas">
+                        {caps.brancasCapturadas.map((t, i) => (
+                          <img key={`b${i}`} className="captura-peca" src={`/pecas/w${t}.svg`} alt="" />
+                        ))}
+                        {caps.vantagem < 0 && <span className="vantagem">+{-caps.vantagem}</span>}
+                      </div>
                     </div>
                   )}
                 </div>
               )}
-
-              <details className="historico" open={historico.length > 0}>
-                <summary>
-                  <span>Histórico de lances</span>
-                  <span className="contador">{historico.length}</span>
-                </summary>
-                {historico.length === 0 ? (
-                  <p className="vazio">Sem lances ainda.</p>
-                ) : (
-                  <ol>
-                    {Array.from({ length: Math.ceil(historico.length / 2) }, (_, i) => (
-                      <li key={i}>
-                        <span>{historico[i * 2]}</span>
-                        <span>{historico[i * 2 + 1] ?? ''}</span>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </details>
             </aside>
           </div>
 
@@ -587,7 +607,9 @@ function App() {
                   </span>
                 </p>
               )}
-              <button onClick={voltar}>Voltar ao início</button>
+              <button onClick={estado.online ? () => navigate('/lobby') : voltar}>
+                {estado.online ? 'Voltar às salas' : 'Voltar ao início'}
+              </button>
             </div>
           )}
         </div>

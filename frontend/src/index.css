@@ -599,6 +599,71 @@ button.primario:hover:not(:disabled) {
   border-radius: 999px;
 }
 
+/* Teaser de ranking na tela inicial: mini-pódio + CTA para o online. */
+.teaser-ranking {
+  width: min(320px, 90vw);
+  margin-top: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--surface-line);
+  border-radius: 14px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: surgir 0.5s ease both;
+}
+.teaser-titulo {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+  text-align: center;
+}
+.teaser-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.teaser-lista li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.teaser-medalha {
+  flex-shrink: 0;
+}
+.teaser-nome {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.teaser-elo {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--gold);
+}
+.teaser-cta {
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+  background: rgba(191, 154, 76, 0.12);
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.teaser-cta:hover {
+  background: rgba(191, 154, 76, 0.24);
+}
+
 /* botão voltar (tela de jogo) */
 .voltar {
   align-self: flex-start;
@@ -882,7 +947,280 @@ a.toggle:hover {
   text-decoration: underline;
 }
 
+/* ---------- Página do lobby (rota /lobby) ---------- */
+.lobby-page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.lobby-page .voltar-auth {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+.lobby-page .voltar-auth:hover {
+  color: var(--gold);
+}
+.lobby-box {
+  width: min(460px, 94vw);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 30px 26px;
+  border: 1px solid var(--surface-line);
+  border-radius: 18px;
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.8);
+  animation: surgir 0.5s ease both;
+}
+/* Layout de 3 colunas do lobby: tabelas nas laterais, salas no centro.
+   Alinha ao topo para as tabelas e a caixa começarem na mesma altura. */
+.lobby-3col {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+}
+/* Em telas estreitas, as tabelas empilham abaixo da caixa (ordem: salas primeiro). */
+@media (max-width: 900px) {
+  .lobby-3col {
+    flex-wrap: wrap;
+  }
+  .lobby-3col .lobby-box {
+    order: -1;
+  }
+  .ranking-tabela {
+    flex: 1 1 260px;
+  }
+}
+
+/* Tabela de pontuadores (usada nos dois lados) */
+.ranking-tabela {
+  width: min(280px, 90vw);
+  padding: 20px 18px;
+  border: 1px solid var(--surface-line);
+  border-radius: 16px;
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.8);
+  animation: surgir 0.5s ease both;
+}
+.ranking-cabecalho {
+  text-align: center;
+  margin-bottom: 14px;
+}
+.ranking-cabecalho h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--ink);
+}
+.ranking-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ranking-vazio {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.ranking-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ranking-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  transition: background 0.18s ease;
+}
+.ranking-linha:hover {
+  background: rgba(0, 0, 0, 0.24);
+}
+/* Destaca a linha do próprio usuário logado. */
+.ranking-linha.eu {
+  background: rgba(191, 154, 76, 0.16);
+  border: 1px solid var(--gold);
+}
+.ranking-pos {
+  width: 20px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.ranking-nome {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.ranking-nome strong {
+  font-size: 14px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ranking-rank {
+  font-size: 11px;
+  color: var(--muted);
+}
+.ranking-elo {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.lobby-cabecalho {
+  text-align: center;
+}
+.lobby-cabecalho h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--ink);
+}
+/* Filtro por Elo */
+.lobby-filtro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lobby-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.lobby-chips button {
+  padding: 7px 12px;
+  font-size: 13px;
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--surface-line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.lobby-chips button:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.lobby-faixa {
+  display: flex;
+  gap: 12px;
+}
+.lobby-faixa label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.lobby-faixa input {
+  width: 100%;
+  padding: 9px 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--surface-line);
+  border-radius: 10px;
+}
+.lobby-faixa input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+/* Lista de salas */
+.lobby-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+.lobby-vazio {
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+  padding: 18px 0;
+}
+.sala {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--surface-line);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.sala-jogador {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.sala-inicial {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 700;
+  color: var(--bg);
+  background: linear-gradient(180deg, #f0d488, var(--gold));
+}
+.sala-nome {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sala-nome strong {
+  color: var(--ink);
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sala-elo {
+  font-size: 12px;
+  color: var(--muted);
+}
+.sala .primario {
+  padding: 8px 18px;
+  flex-shrink: 0;
+}
+
 /* ---------- Layout da tela de jogo ---------- */
+/* Três colunas: histórico (esq) · tabuleiro (centro) · capturas (dir).
+   Em telas estreitas o flex-wrap empilha; o tabuleiro sobe para o topo. */
 .jogo-area {
   display: flex;
   gap: 22px;
@@ -891,33 +1229,57 @@ a.toggle:hover {
   flex-wrap: wrap;
 }
 .painel {
-  width: 220px;
+  width: 208px;
   text-align: left;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
+@media (max-width: 900px) {
+  .tabuleiro-wrap {
+    order: -1; /* no empilhado, tabuleiro primeiro; painéis abaixo */
+  }
+  .painel {
+    width: min(360px, 100%);
+  }
+}
 
-/* Material capturado: uma linha por lado, só aparece quando há capturas. */
+/* Material capturado: um lado por linha (rótulo + pilha), só aparece com capturas. */
 .material {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.captura-lado {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.linha-captura {
+.captura-rotulo {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.captura-pilha {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 1px;
   min-height: 26px;
 }
-.linha-captura img {
-  width: 22px;
-  height: 22px;
+/* Ícones levemente sobrepostos (estilo chess.com). */
+.captura-peca {
+  width: 24px;
+  height: 24px;
+  margin-left: -9px;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
 }
-.linha-captura .vantagem {
-  margin-left: 6px;
+.captura-peca:first-child {
+  margin-left: 0;
+}
+.captura-pilha .vantagem {
+  margin-left: 8px;
   font-size: 12px;
   font-weight: 700;
   color: var(--gold);
@@ -1004,6 +1366,39 @@ a.toggle:hover {
   color: var(--muted);
   font-style: italic;
   font-size: 13px;
+}
+/* Cabeçalho das colunas Brancas/Pretas, alinhado às colunas de lance
+   (14px do padding + 22px do número + 10px do gap). */
+.historico-cab {
+  display: flex;
+  gap: 10px;
+  padding: 8px 14px 2px calc(14px + 22px + 10px);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.historico-cab span {
+  min-width: 64px; /* = min-width 54px do chip + 10px de padding horizontal */
+}
+/* Chips do lance, destacados por cor do lado que jogou. */
+.historico .lance {
+  padding: 1px 5px;
+  border-radius: 6px;
+}
+.lance-b {
+  color: var(--ink);
+  background: color-mix(in srgb, #fff 9%, transparent);
+}
+.lance-p {
+  color: var(--muted);
+  background: color-mix(in srgb, #000 24%, transparent);
+}
+/* Lance preto ainda não jogado (par ímpar): sem chip vazio. */
+.historico .lance:empty {
+  background: transparent;
+  padding: 0;
 }
 
 /* ---------- Animações ---------- */
