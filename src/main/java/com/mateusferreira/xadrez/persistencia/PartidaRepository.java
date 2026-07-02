@@ -32,4 +32,12 @@ public interface PartidaRepository extends JpaRepository<PartidaEntity, Long> {
      * resultado=? — ordenadas da mais recente para a mais antiga (id desc).
      */
     List<PartidaEntity> findByOnlineTrueAndPretoUsuarioIsNullAndResultadoOrderByIdDesc(Resultado resultado);
+
+    /**
+     * Salas abertas (sem oponente e não terminadas) de UM criador específico.
+     * Usado para garantir "uma sala aberta por criador": ao criar uma nova, as
+     * antigas dele são removidas, evitando salas fantasma acumuladas no lobby.
+     */
+    List<PartidaEntity> findByOnlineTrueAndBrancoUsuarioAndPretoUsuarioIsNullAndResultado(
+            String brancoUsuario, Resultado resultado);
 }
