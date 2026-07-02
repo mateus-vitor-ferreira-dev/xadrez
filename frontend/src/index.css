@@ -1224,7 +1224,7 @@ a.toggle:hover {
 .jogo-area {
   display: flex;
   gap: 22px;
-  align-items: flex-start;
+  align-items: center; /* painéis centrados verticalmente com o tabuleiro */
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -1244,11 +1244,16 @@ a.toggle:hover {
   }
 }
 
-/* Material capturado: um lado por linha (rótulo + pilha), só aparece com capturas. */
+/* Material capturado: card (mesmo peso visual do histórico), um lado por linha
+   (rótulo + pilha). Só aparece quando há capturas. */
 .material {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--surface-line);
+  border-radius: 12px;
+  background: var(--surface);
 }
 .captura-lado {
   display: flex;
