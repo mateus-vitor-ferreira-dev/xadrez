@@ -1649,12 +1649,16 @@ a.toggle:hover {
    sólido com contorno. Fica no FIM do arquivo de propósito: assim vence, por
    ordem de origem, as regras-base de mesma especificidade. Não toca no tema
    escuro nem nos botões dourados (.ativo/.primario ficam de fora). */
-[data-tema='claro'] button:not(.ativo):not(.primario),
+/* Só os botões-"pílula" genéricos (toggles, Sair/Entrar, voltar, chips, níveis).
+   Exclui componentes-botão com visual próprio: as CASAS do tabuleiro (que têm
+   suas cores de madeira), os itens/setas do carrossel de modos e o CTA do teaser
+   — senão a superfície branca apagaria o design deles (ex.: tabuleiro cinza). */
+[data-tema='claro'] button:not(.ativo):not(.primario):not(.casa):not(.carrossel-item):not(.carrossel-seta):not(.teaser-cta),
 [data-tema='claro'] a.toggle {
   background: rgba(255, 255, 255, 0.62);
   border-color: var(--surface-line);
 }
-[data-tema='claro'] button:not(.ativo):not(.primario):hover:not(:disabled),
+[data-tema='claro'] button:not(.ativo):not(.primario):not(.casa):not(.carrossel-item):not(.carrossel-seta):not(.teaser-cta):hover:not(:disabled),
 [data-tema='claro'] a.toggle:hover {
   background: rgba(255, 255, 255, 0.85);
   border-color: var(--gold);
