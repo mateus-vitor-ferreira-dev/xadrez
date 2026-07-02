@@ -89,6 +89,8 @@ export interface PartidaAberta {
   id: number
   criador: string
   elo: number
+  /** Rótulo do título equipado pelo criador (pronto para exibir), ou null. */
+  titulo: string | null
 }
 
 /**
