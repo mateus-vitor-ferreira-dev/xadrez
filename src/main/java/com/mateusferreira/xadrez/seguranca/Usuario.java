@@ -2,6 +2,8 @@ package com.mateusferreira.xadrez.seguranca;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -52,6 +54,16 @@ public class Usuario {
     @Column(nullable = false)
     private int vitoriasSeguidas = 0;
 
+    /**
+     * Papel da conta. A coluna é NULLABLE de propósito: com {@code ddl-auto=update}
+     * numa base que já tem usuários, adicionar uma coluna NOT NULL sem default
+     * quebraria a migração. Linhas antigas ficam NULL e {@link #getRole()} as trata
+     * como {@link Role#USER}. Contas novas nascem USER (default do campo abaixo).
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private Role role = Role.USER;
+
     protected Usuario() {
     }
 
@@ -100,5 +112,19 @@ public class Usuario {
 
     public void setVitoriasSeguidas(int vitoriasSeguidas) {
         this.vitoriasSeguidas = vitoriasSeguidas;
+    }
+
+    /** Papel da conta; NULL (linhas antigas) conta como {@link Role#USER}. */
+    public Role getRole() {
+        return role == null ? Role.USER : role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    /** Atalho: {@code true} se a conta é administradora (acesso total). */
+    public boolean isAdmin() {
+        return getRole() == Role.ADMIN;
     }
 }

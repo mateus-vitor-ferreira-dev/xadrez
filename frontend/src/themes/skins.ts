@@ -43,9 +43,12 @@ export function temaPorId(id: string | null): TemaPecas {
   return TEMAS.find((t) => t.id === id) ?? TEMA_PADRAO
 }
 
-/** Um tema está liberado quando o Elo do jogador alcança o piso da faixa. */
-export function desbloqueado(tema: TemaPecas, elo: number): boolean {
-  return elo >= tema.eloMin
+/**
+ * Um tema está liberado quando o Elo do jogador alcança o piso da faixa — ou
+ * sempre, se a conta for administradora (acesso total, independentemente do rank).
+ */
+export function desbloqueado(tema: TemaPecas, elo: number, admin = false): boolean {
+  return admin || elo >= tema.eloMin
 }
 
 /**

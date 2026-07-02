@@ -34,6 +34,8 @@ export interface Autenticacao {
   usuario: string
   email: string
   elo: number
+  /** Conta administradora: libera todas as skins independentemente do rank. */
+  admin: boolean
 }
 
 // Em produção VITE_API_URL aponta para o backend; em dev fica vazio (proxy do Vite).
