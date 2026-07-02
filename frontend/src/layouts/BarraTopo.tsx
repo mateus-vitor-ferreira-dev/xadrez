@@ -27,7 +27,10 @@ export default function BarraTopo({ tema, onToggleTema, mudo, onToggleMudo }: Ba
       <div className="usuario-area">
         {auth ? (
           <>
-            <PerfilUsuario usuario={auth.usuario} elo={auth.elo} titulo={tituloPorId(auth.titulo)?.rotulo} />
+            {/* Crachá clicável: leva à tela de editar o perfil. */}
+            <Link to="/perfil" className="perfil-link" title="Editar meu perfil">
+              <PerfilUsuario usuario={auth.usuario} elo={auth.elo} titulo={tituloPorId(auth.titulo)?.rotulo} />
+            </Link>
             <button className="toggle" onClick={sair}>
               Sair
             </button>

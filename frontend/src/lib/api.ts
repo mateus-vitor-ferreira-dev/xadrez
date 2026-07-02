@@ -151,6 +151,46 @@ export async function equiparTitulo(titulo: string | null): Promise<Autenticacao
   return resposta.json() as Promise<Autenticacao>
 }
 
+// ---------- Perfil (tela de editar informações) ----------
+/** Dados do perfil para preencher/salvar a tela de edição. */
+export interface Perfil {
+  /** Apelido (público, exibido — não editável por aqui). */
+  usuario: string
+  email: string
+  /** Opcional; null = não informado. */
+  telefone: string | null
+  /** URL da foto de perfil; null = usa o avatar-inicial. */
+  fotoUrl: string | null
+}
+
+/** Busca o perfil atual do usuário logado (para preencher o formulário). */
+export async function buscarPerfil(): Promise<Perfil> {
+  const resposta = await fetch(`${API}/usuario/perfil`, { headers: comAuth() })
+  if (!resposta.ok) throw new Error(`Erro ${resposta.status}`)
+  return resposta.json() as Promise<Perfil>
+}
+
+/**
+ * Salva as alterações do perfil (e-mail, telefone e foto). O back valida o
+ * e-mail (formato + unicidade) e devolve o perfil já atualizado.
+ */
+export async function atualizarPerfil(dados: {
+  email: string
+  telefone: string | null
+  fotoUrl: string | null
+}): Promise<Perfil> {
+  const resposta = await fetch(`${API}/usuario/perfil`, {
+    method: 'PUT',
+    headers: comAuth({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(dados),
+  })
+  if (!resposta.ok) {
+    const erro = await resposta.json().catch(() => null)
+    throw new Error(erro?.message ?? (resposta.status === 409 ? 'Esse e-mail já está cadastrado.' : 'Não foi possível salvar o perfil.'))
+  }
+  return resposta.json() as Promise<Perfil>
+}
+
 export async function jogadaIA(id: number, nivel: number): Promise<EstadoPartida> {
   return lerOuFalhar(await fetch(`${BASE}/${id}/jogada-ia?nivel=${nivel}`, { method: 'POST', headers: comAuth() }))
 }
