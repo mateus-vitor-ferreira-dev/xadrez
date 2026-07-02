@@ -16,6 +16,7 @@ export default function PaginaSkins() {
   const { auth } = useAuth()
   const { tema: equipado, equipar } = useSkin()
   const meuElo = auth?.elo ?? 0
+  const admin = auth?.admin ?? false
 
   return (
     <div className="skins-page">
@@ -26,14 +27,17 @@ export default function PaginaSkins() {
       <div className="skins-cabecalho">
         <h2>🎨 Skins de peças</h2>
         <p className="auth-sub">
-          Equipe o visual que quiser. Novas skins são liberadas conforme você sobe de rank
-          {auth ? ` (seu Elo: ${meuElo}).` : '. Faça login para desbloquear pelas suas vitórias.'}
+          {admin
+            ? '👑 Conta admin: todas as skins liberadas.'
+            : auth
+              ? `Equipe o visual que quiser. Novas skins são liberadas conforme você sobe de rank (seu Elo: ${meuElo}).`
+              : 'Equipe o visual que quiser. Novas skins são liberadas conforme você sobe de rank. Faça login para desbloquear pelas suas vitórias.'}
         </p>
       </div>
 
       <div className="skins-grid">
         {TEMAS.map((t) => {
-          const liberado = desbloqueado(t, meuElo)
+          const liberado = desbloqueado(t, meuElo, admin)
           const ativo = t.id === equipado.id
           return (
             <div key={t.id} className={`skin-card${ativo ? ' equipado' : ''}${liberado ? '' : ' bloqueado'}`}>
