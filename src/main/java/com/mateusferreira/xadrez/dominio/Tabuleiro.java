@@ -1,4 +1,3 @@
-
 package com.mateusferreira.xadrez.dominio;
 
 import java.util.ArrayList;
