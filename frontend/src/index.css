@@ -1642,6 +1642,179 @@ a.toggle:hover {
   }
 }
 
+/* ---------- Manual "Como jogar" (/como-jogar) ---------- */
+.como-jogar-page {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 56px 20px 80px;
+  text-align: left;
+}
+.como-jogar-page .voltar-auth {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+.como-jogar-page .voltar-auth:hover {
+  color: var(--gold);
+}
+.manual-cabecalho {
+  text-align: center;
+  margin-bottom: 26px;
+}
+.manual-cabecalho h1 {
+  font-size: clamp(30px, 6vw, 46px);
+}
+.manual-cabecalho .auth-sub {
+  max-width: 48ch;
+  margin: 8px auto 0;
+}
+.manual-secao {
+  margin: 32px 0;
+}
+.manual-secao h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+.manual-secao p {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+.manual-secao p strong {
+  color: var(--ink);
+}
+.manual-secao a {
+  color: var(--gold);
+}
+/* diagramas: mini-tabuleiros estáticos (não clicáveis) */
+.diagrama {
+  display: flex;
+  justify-content: center;
+}
+.diagrama .tabuleiro {
+  grid-template-columns: repeat(8, clamp(22px, 4vw, 34px));
+  grid-template-rows: repeat(8, clamp(22px, 4vw, 34px));
+  margin: 0;
+  padding: 7px;
+  box-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(230, 192, 103, 0.14);
+  animation: none;
+}
+.diagrama .casa {
+  cursor: default;
+}
+.diagrama .casa:hover {
+  filter: none;
+}
+.diagrama .rotulo {
+  font-size: 8px;
+}
+/* lista de peças e lances especiais: cartão diagrama + explicação */
+.manual-pecas {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.manual-peca,
+.manual-especial {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--surface-line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.manual-especial {
+  margin-bottom: 14px;
+}
+.manual-peca-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.manual-peca-info strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+.manual-peca-info span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.manual-promocao {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.manual-promocao-peca {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+}
+.manual-promocao-peca > svg {
+  width: 100%;
+  height: 100%;
+}
+/* faixas de rank */
+.rank-faixas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.rank-faixa {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--surface-line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.rank-faixa strong {
+  color: var(--gold);
+  font-size: 14px;
+}
+.rank-faixa span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.manual-cta {
+  text-align: center;
+  margin-top: 34px;
+}
+.manual-cta-botao {
+  display: inline-block;
+  text-decoration: none;
+}
+/* link de onboarding na home */
+.como-jogar-link {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+.como-jogar-link:hover {
+  color: var(--gold);
+}
+@media (max-width: 620px) {
+  .manual-peca,
+  .manual-especial {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
 /* ---------- Tema claro: superfícies dos controles ----------
    No claro, os controles herdavam fundos pensados para o escuro — quase
    transparentes (rgba(255,255,255,0.02) nos botões) ou escuros (rgba(0,0,0,…)
