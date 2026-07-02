@@ -159,12 +159,15 @@ export default function PaginaLobby() {
                   <span className="sala-inicial">{s.criador.charAt(0).toUpperCase()}</span>
                   <div className="sala-nome">
                     <strong>{s.criador}</strong>
-                    <span className="sala-elo">Elo {s.elo}</span>
+                    <span className="sala-status">🟢 Aguardando oponente</span>
                   </div>
                 </div>
-                <button className="primario" onClick={() => entrarNaSala(s.id)}>
-                  Entrar
-                </button>
+                <div className="sala-acao">
+                  <span className="sala-elo-badge">Elo {s.elo}</span>
+                  <button className="primario" onClick={() => entrarNaSala(s.id)}>
+                    Entrar
+                  </button>
+                </div>
               </div>
             ))
           )}

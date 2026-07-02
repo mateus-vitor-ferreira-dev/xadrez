@@ -411,9 +411,11 @@ function App() {
         </div>
       </div>
 
-      <header className="topo">
+      {/* Na tela inicial o cabeçalho é o "hero" grande; dentro do jogo ele encolhe
+          (sem tagline) para o tabuleiro caber na tela sem rolar. */}
+      <header className={emJogo ? 'topo topo-compacto' : 'topo'}>
         <h1>♞ Xadrez</h1>
-        <p className="tagline">Local · contra a IA · online em tempo real</p>
+        {!emJogo && <p className="tagline">Local · contra a IA · online em tempo real</p>}
       </header>
 
       {!emJogo ? (
@@ -470,30 +472,6 @@ function App() {
             {estado?.online ? '← Voltar às salas' : '← Voltar ao início'}
           </button>
 
-          {minhaCor !== null && (
-            <div className="online-info">
-              <p>
-                Você joga de <strong>{minhaCor}</strong>{' '}
-                <span className={conectado ? 'ok' : 'off'}>{conectado ? '🟢 tempo real' : '🔌 conectando…'}</span>
-              </p>
-              {estado?.online &&
-                (advNome ? (
-                  <p className="adversario">
-                    Adversário: <strong>{advNome}</strong>
-                    {advElo != null && ` · Elo ${advElo}`}
-                  </p>
-                ) : (
-                  <p className="adversario aguardando">Aguardando o adversário entrar…</p>
-                ))}
-              {linkConvite && (
-                <p className="convite">
-                  Convide o oponente (joga de PRETO):
-                  <input readOnly value={linkConvite} onFocus={(e) => e.currentTarget.select()} />
-                </p>
-              )}
-            </div>
-          )}
-
           {estado && (
             <p className="status">
               Vez das <strong>{estado.vez}</strong>
@@ -504,8 +482,32 @@ function App() {
           )}
 
           <div className="jogo-area">
-            {/* ESQUERDA: histórico recolhível, com colunas por cor. */}
+            {/* ESQUERDA: info da partida online (ao lado do tabuleiro, não mais
+                empurrando-o pra baixo) + histórico recolhível. */}
             <aside className="painel painel-esq">
+              {minhaCor !== null && (
+                <div className="online-info">
+                  <p>
+                    Você joga de <strong>{minhaCor}</strong>{' '}
+                    <span className={conectado ? 'ok' : 'off'}>{conectado ? '🟢 tempo real' : '🔌 conectando…'}</span>
+                  </p>
+                  {estado?.online &&
+                    (advNome ? (
+                      <p className="adversario">
+                        Adversário: <strong>{advNome}</strong>
+                        {advElo != null && ` · Elo ${advElo}`}
+                      </p>
+                    ) : (
+                      <p className="adversario aguardando">Aguardando o adversário entrar…</p>
+                    ))}
+                  {linkConvite && (
+                    <p className="convite">
+                      Convide o oponente (joga de PRETO):
+                      <input readOnly value={linkConvite} onFocus={(e) => e.currentTarget.select()} />
+                    </p>
+                  )}
+                </div>
+              )}
               <details className="historico" open={historico.length > 0}>
                 <summary>
                   <span>Histórico de lances</span>

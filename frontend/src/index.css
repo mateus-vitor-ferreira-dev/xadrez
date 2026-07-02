@@ -79,6 +79,15 @@ h1 {
   animation: surgir 0.7s ease 0.08s both;
 }
 
+/* Cabeçalho compacto (dentro do jogo): título menor e sem tagline, para o
+   tabuleiro caber na tela sem rolar. */
+.topo-compacto {
+  margin-bottom: 14px;
+}
+.topo-compacto h1 {
+  font-size: clamp(22px, 4vw, 30px);
+}
+
 /* ---------- Botões ---------- */
 button {
   font-family: var(--font-body);
@@ -337,6 +346,17 @@ button.primario:hover:not(:disabled) {
 
 .online-info {
   animation: surgir 0.7s ease 0.16s both;
+}
+/* No painel lateral: ocupa a largura do painel, texto à esquerda, sem a margem
+   centralizada do card padrão (que era pensado para ficar acima do tabuleiro). */
+.painel .online-info {
+  margin: 0;
+  max-width: none;
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 13px;
+  text-align: left;
+  box-shadow: none;
 }
 .online-info p {
   margin: 0;
@@ -1175,27 +1195,36 @@ a.toggle:hover {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--surface-line);
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.22);
+  border-radius: 14px;
+  /* leve gradiente lateral (vibe "card de matchmaking") */
+  background: linear-gradient(90deg, rgba(191, 154, 76, 0.06), rgba(0, 0, 0, 0.28));
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+.sala:hover {
+  border-color: var(--gold);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px -18px rgba(0, 0, 0, 0.9);
 }
 .sala-jogador {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   min-width: 0;
 }
 .sala-inicial {
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
   border-radius: 50%;
+  font-size: 17px;
   font-weight: 700;
   color: var(--bg);
   background: linear-gradient(180deg, #f0d488, var(--gold));
+  box-shadow: 0 0 0 3px rgba(191, 154, 76, 0.15);
 }
 .sala-nome {
   display: flex;
@@ -1209,9 +1238,25 @@ a.toggle:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.sala-elo {
+.sala-status {
   font-size: 12px;
-  color: var(--muted);
+  color: #6fce86;
+}
+.sala-acao {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.sala-elo-badge {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold);
+  background: rgba(191, 154, 76, 0.12);
+  border: 1px solid rgba(191, 154, 76, 0.4);
+  border-radius: 999px;
+  white-space: nowrap;
 }
 .sala .primario {
   padding: 8px 18px;
