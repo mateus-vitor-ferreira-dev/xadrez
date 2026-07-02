@@ -1162,7 +1162,8 @@ a.toggle:hover {
   font-size: 13px;
   color: var(--muted);
 }
-.lobby-faixa input {
+.lobby-faixa input,
+.lobby-faixa select {
   width: 100%;
   padding: 9px 12px;
   font-family: var(--font-body);
@@ -1171,10 +1172,16 @@ a.toggle:hover {
   background: rgba(0, 0, 0, 0.28);
   border: 1px solid var(--surface-line);
   border-radius: 10px;
+  cursor: pointer;
 }
-.lobby-faixa input:focus {
+.lobby-faixa input:focus,
+.lobby-faixa select:focus {
   outline: none;
   border-color: var(--gold);
+}
+.lobby-faixa select option {
+  color: var(--ink);
+  background: #1c1a17;
 }
 /* Lista de salas */
 .lobby-lista {
