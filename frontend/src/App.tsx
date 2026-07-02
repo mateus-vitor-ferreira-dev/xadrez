@@ -18,6 +18,7 @@ import CarrosselModos from './CarrosselModos'
 import PecaModo from './PecaModo'
 import PerfilUsuario from './PerfilUsuario'
 import TeaserRanking from './TeaserRanking'
+import { PecaSvg } from './skin'
 import { useAuth } from './auth'
 import { type Modo } from './modos'
 import * as jogoCache from './jogoCache'
@@ -417,6 +418,9 @@ function App() {
           )}
         </div>
         <div className="toggles">
+          <Link className="toggle" to="/skins" title="Skins das peças">
+            🎨
+          </Link>
           <button className="toggle" title="Tema" onClick={() => setTema((t) => (t === 'escuro' ? 'claro' : 'escuro'))}>
             {tema === 'escuro' ? '☀️' : '🌙'}
           </button>
@@ -571,7 +575,7 @@ function App() {
                       <span className="captura-rotulo">Brancas</span>
                       <div className="captura-pilha" title="Peças capturadas pelas brancas">
                         {caps.pretasCapturadas.map((t, i) => (
-                          <img key={`p${i}`} className="captura-peca" src={`/pecas/b${t}.svg`} alt="" />
+                          <PecaSvg key={`p${i}`} code={`b${t}`} className="captura-peca" />
                         ))}
                         {caps.vantagem > 0 && <span className="vantagem">+{caps.vantagem}</span>}
                       </div>
@@ -582,7 +586,7 @@ function App() {
                       <span className="captura-rotulo">Pretas</span>
                       <div className="captura-pilha" title="Peças capturadas pelas pretas">
                         {caps.brancasCapturadas.map((t, i) => (
-                          <img key={`b${i}`} className="captura-peca" src={`/pecas/w${t}.svg`} alt="" />
+                          <PecaSvg key={`b${i}`} code={`w${t}`} className="captura-peca" />
                         ))}
                         {caps.vantagem < 0 && <span className="vantagem">+{-caps.vantagem}</span>}
                       </div>
@@ -601,7 +605,7 @@ function App() {
               <div className="opcoes">
                 {(Object.keys(LETRA_PROMOCAO) as TipoPromocao[]).map((tipo) => (
                   <button key={tipo} onClick={() => escolherPromocao(tipo)} title={tipo}>
-                    <img className="peca-opcao" src={`/pecas/${estado.vez === 'BRANCO' ? 'w' : 'b'}${LETRA_PROMOCAO[tipo]}.svg`} alt={tipo} />
+                    <PecaSvg code={`${estado.vez === 'BRANCO' ? 'w' : 'b'}${LETRA_PROMOCAO[tipo]}`} className="peca-opcao" />
                   </button>
                 ))}
               </div>

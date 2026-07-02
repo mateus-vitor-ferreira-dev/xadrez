@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { PecaSvg } from './skin'
 
 interface Props {
   tabuleiro: string
@@ -11,10 +12,10 @@ interface Props {
   girar?: boolean
 }
 
-function arquivoDaPeca(caractere: string): string {
+/** Código da peça a partir do caractere do tabuleiro, ex.: 'P' -> 'wp', 'p' -> 'bp'. */
+function codigoDaPeca(caractere: string): string {
   const cor = caractere === caractere.toUpperCase() ? 'w' : 'b'
-  const tipo = caractere.toLowerCase()
-  return `/pecas/${cor}${tipo}.svg`
+  return `${cor}${caractere.toLowerCase()}`
 }
 
 function Tabuleiro({ tabuleiro, selecionada, destaques, casaXeque, ultimoLance, onClicarCasa, girar = false }: Props) {
@@ -58,7 +59,7 @@ function Tabuleiro({ tabuleiro, selecionada, destaques, casaXeque, ultimoLance, 
 
           {!vazia && (
             <span className={`peca-wrap${deslize ? ' desliza' : ''}`} style={estiloDeslize}>
-              <img className="peca" src={arquivoDaPeca(caractere)} alt="" draggable={false} />
+              <PecaSvg code={codigoDaPeca(caractere)} className="peca" />
             </span>
           )}
           {ehDestino && <span className={vazia ? 'marcador' : 'marcador captura'} />}
