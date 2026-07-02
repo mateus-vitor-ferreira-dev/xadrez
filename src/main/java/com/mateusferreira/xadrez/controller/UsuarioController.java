@@ -1,12 +1,15 @@
 package com.mateusferreira.xadrez.controller;
 
+import com.mateusferreira.xadrez.controller.dto.AtualizarPerfilRequest;
 import com.mateusferreira.xadrez.controller.dto.EquiparTituloRequest;
+import com.mateusferreira.xadrez.controller.dto.PerfilResponse;
 import com.mateusferreira.xadrez.controller.dto.TokenResponse;
 import com.mateusferreira.xadrez.dominio.Titulo;
 import com.mateusferreira.xadrez.seguranca.JwtService;
 import com.mateusferreira.xadrez.seguranca.Usuario;
 import com.mateusferreira.xadrez.seguranca.UsuarioRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,14 +17,20 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.Principal;
+import java.util.regex.Pattern;
 
 /**
- * Ações sobre o próprio perfil do usuário logado. Por ora, equipar o TÍTULO
- * exibido ao lado do apelido (parte do "caminho de troféus").
+ * Ações sobre o próprio perfil do usuário logado: equipar o TÍTULO exibido ao
+ * lado do apelido (parte do "caminho de troféus") e editar as informações do
+ * perfil (e-mail, telefone e foto) pela tela de perfil.
  */
 @RestController
 @RequestMapping("/usuario")
 public class UsuarioController {
+
+    // Mesma validação leve de e-mail do cadastro (AuthController): algo@algo.dominio,
+    // sem espaços. Não é a RFC inteira, mas barra o obviamente inválido.
+    private static final Pattern EMAIL = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
     private final UsuarioRepository repository;
     private final JwtService jwtService;
@@ -48,6 +57,54 @@ public class UsuarioController {
         repository.save(u);
         String nome = titulo == null ? null : titulo.name();
         return new TokenResponse(jwtService.gerar(u.getUsuario()), u.getUsuario(), u.getEmail(), u.getElo(), u.isAdmin(), nome);
+    }
+
+    /**
+     * GET /usuario/perfil — devolve os dados atuais do perfil para PREENCHER a
+     * tela de edição (apelido, e-mail, telefone e foto). Exige login.
+     */
+    @GetMapping("/perfil")
+    public PerfilResponse meuPerfil(Principal principal) {
+        return perfilDe(usuarioLogado(principal));
+    }
+
+    /**
+     * PUT /usuario/perfil — atualiza e-mail, telefone e foto do usuário logado.
+     * O e-mail é obrigatório e validado (formato + unicidade entre OUTRAS contas);
+     * telefone e fotoUrl são opcionais (vazio limpa o campo). Não mexe em apelido
+     * nem senha. Devolve o perfil já atualizado.
+     */
+    @PutMapping("/perfil")
+    public PerfilResponse atualizarPerfil(@RequestBody AtualizarPerfilRequest req, Principal principal) {
+        Usuario u = usuarioLogado(principal);
+
+        String email = req.email() == null ? "" : req.email().trim().toLowerCase();
+        if (!EMAIL.matcher(email).matches()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe um e-mail válido.");
+        }
+        // Só checa colisão se o e-mail realmente mudou — e ignora a própria conta.
+        if (!email.equals(u.getEmail()) && repository.existsByEmail(email)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Esse e-mail já está cadastrado.");
+        }
+
+        u.setEmail(email);
+        u.setTelefone(normalizar(req.telefone()));
+        u.setFotoUrl(normalizar(req.fotoUrl()));
+        repository.save(u);
+        return perfilDe(u);
+    }
+
+    /** Monta o DTO de perfil a partir da entidade. */
+    private PerfilResponse perfilDe(Usuario u) {
+        return new PerfilResponse(u.getUsuario(), u.getEmail(), u.getTelefone(), u.getFotoUrl());
+    }
+
+    /** Campo opcional: trim + vazio/branco vira NULL (limpa a coluna). */
+    private String normalizar(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
+        }
+        return valor.trim();
     }
 
     /** O usuário logado (pelo apelido no token); 401 se anônimo/sessão inválida. */

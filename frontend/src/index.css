@@ -1079,6 +1079,78 @@ a.toggle:hover {
   margin-top: 4px;
   padding: 11px;
 }
+
+/* ---------- Página de perfil (rota /perfil) ---------- */
+/* Feedback: composto (mesmo elemento) — vermelho p/ erro, dourado p/ sucesso. */
+.status.alerta {
+  color: var(--danger);
+  font-weight: 600;
+}
+.status.ok {
+  color: var(--gold-deep);
+  font-weight: 600;
+}
+/* O crachá vira link: sem sublinhado, com um leve realce no hover. */
+.perfil-link {
+  text-decoration: none;
+  border-radius: 999px;
+  transition: filter 0.15s ease;
+}
+.perfil-link:hover {
+  filter: brightness(1.08);
+}
+/* O card de perfil reusa o .auth-box, mas alinha os campos à esquerda. */
+.perfil-box {
+  text-align: left;
+}
+.perfil-box h2,
+.perfil-box .auth-sub {
+  text-align: center;
+}
+/* Prévia da foto: centralizada acima do formulário. */
+.perfil-foto-previa {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 8px;
+}
+.perfil-foto-previa img {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gold);
+  box-shadow: 0 8px 22px -12px rgba(230, 192, 103, 0.7);
+}
+/* Avatar-inicial (sem foto): mesmo estilo dourado da barra, em tamanho maior. */
+.perfil-avatar-grande {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: linear-gradient(150deg, #f6e4b8, var(--gold) 70%, var(--gold-deep));
+  color: #1c140c;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 38px;
+  line-height: 1;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+/* Cada campo: rótulo pequeno em cima, input embaixo. */
+.perfil-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.perfil-campo > span {
+  font-size: 12px;
+  color: var(--muted);
+  padding-left: 2px;
+}
+.perfil-campo input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 /* divisor "ou" entre o formulário e o login com Google */
 .auth-ou {
   display: flex;

@@ -74,6 +74,17 @@ public class Usuario {
     @Column(length = 30)
     private Titulo tituloEquipado;
 
+    /** Telefone (opcional), editável no perfil. Nullable. */
+    @Column(length = 20)
+    private String telefone;
+
+    /**
+     * URL da foto de perfil (opcional). Guardamos só a URL — o arquivo em si vai
+     * para um serviço de imagens externo (a definir). Nullable.
+     */
+    @Column(length = 500)
+    private String fotoUrl;
+
     protected Usuario() {
     }
 
@@ -94,6 +105,11 @@ public class Usuario {
 
     public String getEmail() {
         return email;
+    }
+
+    /** Editável pela tela de perfil; a unicidade é checada no controller. */
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getSenha() {
@@ -145,5 +161,21 @@ public class Usuario {
 
     public void setTituloEquipado(Titulo tituloEquipado) {
         this.tituloEquipado = tituloEquipado;
+    }
+
+    public String getTelefone() {
+        return telefone;
+    }
+
+    public void setTelefone(String telefone) {
+        this.telefone = telefone;
+    }
+
+    public String getFotoUrl() {
+        return fotoUrl;
+    }
+
+    public void setFotoUrl(String fotoUrl) {
+        this.fotoUrl = fotoUrl;
     }
 }
