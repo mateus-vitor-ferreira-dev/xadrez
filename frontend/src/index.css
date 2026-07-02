@@ -1847,6 +1847,30 @@ a.toggle:hover {
   width: 100%;
   height: 100%;
 }
+/* Saídas famosas: a notação dos lances em destaque dourado */
+.manual-saida-lances {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--gold);
+  letter-spacing: 0.02em;
+}
+/* Dicas para iniciantes */
+.manual-dicas {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.manual-dicas li {
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: 14px;
+}
+.manual-dicas li strong {
+  color: var(--ink);
+}
 /* faixas de rank */
 .rank-faixas {
   display: grid;
