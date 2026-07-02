@@ -7,7 +7,9 @@ import App from './App.tsx'
 import PaginaAuth from './PaginaAuth.tsx'
 import PaginaApelido from './PaginaApelido.tsx'
 import PaginaLobby from './PaginaLobby.tsx'
+import PaginaSkins from './PaginaSkins.tsx'
 import { AuthProvider } from './auth.tsx'
+import { SkinProvider } from './skin.tsx'
 
 // O QueryClient é o "cérebro" do TanStack Query: guarda o cache das respostas,
 // controla refetch, etc. Criamos um e o disponibilizamos via Context (Provider)
@@ -24,15 +26,19 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       {/* AuthProvider por fora do Router: a sessão é única e vale em todas as rotas. */}
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<App />} />
-            <Route path="/login" element={<PaginaAuth modo="login" />} />
-            <Route path="/registro" element={<PaginaAuth modo="registro" />} />
-            <Route path="/apelido" element={<PaginaApelido />} />
-            <Route path="/lobby" element={<PaginaLobby />} />
-          </Routes>
-        </BrowserRouter>
+        {/* SkinProvider por fora do Router: a skin equipada vale em todas as telas. */}
+        <SkinProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<App />} />
+              <Route path="/login" element={<PaginaAuth modo="login" />} />
+              <Route path="/registro" element={<PaginaAuth modo="registro" />} />
+              <Route path="/apelido" element={<PaginaApelido />} />
+              <Route path="/lobby" element={<PaginaLobby />} />
+              <Route path="/skins" element={<PaginaSkins />} />
+            </Routes>
+          </BrowserRouter>
+        </SkinProvider>
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,
