@@ -341,6 +341,11 @@ function App() {
 
   /** Ação do botão principal do lobby — muda conforme o modo (e o login, no online). */
   function acaoPrincipal() {
+    if (modo === 'tutorial') {
+      // Tutorial não é partida: leva ao manual "como jogar".
+      navigate('/como-jogar')
+      return
+    }
     if (modo === 'online') {
       // Jogar online exige conta. Sem login, vai para /login; com login, abre o
       // lobby de salas por Elo (onde dá para criar a sua ou entrar em uma).
@@ -375,11 +380,13 @@ function App() {
   // Rótulo do botão principal conforme o modo/login.
   const rotuloAcao = criar.isPending
     ? 'Criando…'
-    : modo === 'online'
-      ? auth
-        ? 'Jogar online'
-        : 'Entrar para jogar online'
-      : 'Começar partida'
+    : modo === 'tutorial'
+      ? '📖 Abrir tutorial'
+      : modo === 'online'
+        ? auth
+          ? 'Jogar online'
+          : 'Entrar para jogar online'
+        : 'Começar partida'
 
   const linkConvite =
     idPartida && minhaCor === 'BRANCO'
@@ -437,18 +444,20 @@ function App() {
               {rotuloAcao}
             </button>
 
-            <div className="entrar-link">
-              <span>Recebeu um convite?</span>
-              <div className="linha">
-                <input
-                  placeholder="Cole o link da partida online…"
-                  value={linkEntrada}
-                  onChange={(e) => setLinkEntrada(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && entrarPorLink()}
-                />
-                <button onClick={entrarPorLink}>Entrar</button>
+            {modo !== 'tutorial' && (
+              <div className="entrar-link">
+                <span>Recebeu um convite?</span>
+                <div className="linha">
+                  <input
+                    placeholder="Cole o link da partida online…"
+                    value={linkEntrada}
+                    onChange={(e) => setLinkEntrada(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && entrarPorLink()}
+                  />
+                  <button onClick={entrarPorLink}>Entrar</button>
+                </div>
               </div>
-            </div>
+            )}
 
             {erro && <p className="status alerta">{erro}</p>}
 
