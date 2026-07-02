@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type TransitionEvent, type WheelEvent } from 'react'
-import { MODOS, type Modo } from './modos'
+import { MODOS, type Modo } from '../lib/modos'
 
 const N = MODOS.length
 

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
-import { buscarRanking, listarPartidasAbertas, novaPartida } from './api'
-import { useAuth } from './auth'
-import { RANKS, eloMaxDoRank, indiceDoRank } from './ranks'
-import TabelaRanking from './TabelaRanking'
+import { buscarRanking, listarPartidasAbertas, novaPartida } from '../lib/api'
+import { useAuth } from '../contexts/auth'
+import { RANKS, eloMaxDoRank, indiceDoRank } from '../themes/ranks'
+import TabelaRanking from '../components/TabelaRanking'
 
 /**
  * LOBBY online: lista as salas abertas (gente esperando oponente), com busca por

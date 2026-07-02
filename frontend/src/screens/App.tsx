@@ -12,17 +12,17 @@ import {
   type Cor,
   type EstadoPartida,
   type TipoPromocao,
-} from './api'
-import Tabuleiro from './Tabuleiro'
-import CarrosselModos from './CarrosselModos'
-import PecaModo from './PecaModo'
-import PerfilUsuario from './PerfilUsuario'
-import TeaserRanking from './TeaserRanking'
-import { PecaSvg } from './skin'
-import { useAuth } from './auth'
-import { type Modo } from './modos'
-import * as jogoCache from './jogoCache'
-import { tocarSom } from './sons'
+} from '../lib/api'
+import Tabuleiro from '../components/Tabuleiro'
+import CarrosselModos from '../components/CarrosselModos'
+import PecaModo from '../components/PecaModo'
+import PerfilUsuario from '../components/PerfilUsuario'
+import TeaserRanking from '../components/TeaserRanking'
+import { PecaSvg } from '../contexts/skin'
+import { useAuth } from '../contexts/auth'
+import { type Modo } from '../lib/modos'
+import * as jogoCache from '../lib/jogoCache'
+import { tocarSom } from '../lib/sons'
 
 const LETRA_PROMOCAO: Record<TipoPromocao, string> = { RAINHA: 'd', TORRE: 't', BISPO: 'b', CAVALO: 'c' }
 const TABULEIRO_INICIAL = 'TCBDRBCTPPPPPPPP................................pppppppptcbdrbct'

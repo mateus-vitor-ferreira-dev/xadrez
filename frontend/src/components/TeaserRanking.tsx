@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { buscarRanking } from './api'
-import { useAuth } from './auth'
+import { buscarRanking } from '../lib/api'
+import { useAuth } from '../contexts/auth'
 
 // Chamariz na tela inicial: um mini-pódio com o Top 3 do site + um botão que leva
 // ao jogo online. Some do caminho de quem só quer jogar local/IA (é um card

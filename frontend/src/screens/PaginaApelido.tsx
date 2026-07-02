@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { googleFinalizar } from './api'
-import { useAuth } from './auth'
+import { googleFinalizar } from '../lib/api'
+import { useAuth } from '../contexts/auth'
 
 /**
  * 1º acesso via Google: o usuário escolhe o apelido (público e único) antes de

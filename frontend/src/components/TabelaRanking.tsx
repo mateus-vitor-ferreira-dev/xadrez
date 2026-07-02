@@ -1,4 +1,4 @@
-import type { LinhaRanking } from './api'
+import type { LinhaRanking } from '../lib/api'
 
 // Tabela de pontuadores reutilizada nos DOIS lados do lobby: só mudam o título,
 // as linhas e (opcionalmente) o subtítulo. Componente puramente apresentacional
