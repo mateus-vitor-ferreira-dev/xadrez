@@ -158,12 +158,15 @@ function App() {
   }, [])
 
   // Mantém o cache do jogo local/IA em dia (sobrevive a um F5 na mesma aba).
-  // Partidas online não entram aqui: exigem conta e já voltam pela URL.
+  // Partidas ONLINE nunca entram no cache: elas têm um lado (minhaCor) definido e
+  // voltam pela URL/link. Sem esse guard, uma partida online restaurada pela URL
+  // (que deixa 'modo' no default 'humano') era gravada no cache e reaberta ao ir
+  // para "/", prendendo o jogador no ciclo jogo↔lobby sem voltar ao menu.
   useEffect(() => {
-    if (idPartida !== null && (modo === 'humano' || modo === 'ia')) {
+    if (idPartida !== null && minhaCor === null && (modo === 'humano' || modo === 'ia')) {
       jogoCache.salvar({ id: idPartida, modo, nivel, historico })
     }
-  }, [idPartida, modo, nivel, historico])
+  }, [idPartida, minhaCor, modo, nivel, historico])
 
   // Se a partida restaurada do cache não existe mais no backend, descarta e
   // volta ao lobby (evita ficar preso numa tela de erro).
@@ -174,6 +177,18 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partida.isError])
+
+  // Rede de segurança: partidas online NUNCA deveriam vir do cache (que é só
+  // local/IA). Se uma cair aqui (minhaCor null porém a partida é online — ex.:
+  // cache antigo gravado antes da correção), limpa e volta ao menu, quebrando o
+  // ciclo jogo↔lobby que impedia de voltar ao início.
+  useEffect(() => {
+    if (estado?.online && minhaCor === null) {
+      jogoCache.limpar()
+      voltar()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estado?.online, minhaCor])
 
   // Cada vez que o tabuleiro muda: registra o lance no histórico e toca o som.
   const boardAntesRef = useRef<string | null>(null)
