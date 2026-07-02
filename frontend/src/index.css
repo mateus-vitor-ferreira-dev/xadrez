@@ -1087,7 +1087,8 @@ a.toggle:hover {
   justify-content: center;
   padding: 24px;
 }
-.lobby-page .voltar-auth {
+.lobby-page .voltar-auth,
+.skins-page .voltar-auth {
   position: absolute;
   top: 22px;
   left: 22px;
@@ -1096,7 +1097,8 @@ a.toggle:hover {
   text-decoration: none;
   transition: color 0.18s ease;
 }
-.lobby-page .voltar-auth:hover {
+.lobby-page .voltar-auth:hover,
+.skins-page .voltar-auth:hover {
   color: var(--gold);
 }
 .lobby-box {
@@ -1638,4 +1640,40 @@ a.toggle:hover {
     transform: translateX(-50%) scale(1);
     opacity: 0.5;
   }
+}
+
+/* ---------- Tema claro: superfícies dos controles ----------
+   No claro, os controles herdavam fundos pensados para o escuro — quase
+   transparentes (rgba(255,255,255,0.02) nos botões) ou escuros (rgba(0,0,0,…)
+   nos inputs/selects) — e "sumiam" no bege. Aqui damos a eles um fundo claro
+   sólido com contorno. Fica no FIM do arquivo de propósito: assim vence, por
+   ordem de origem, as regras-base de mesma especificidade. Não toca no tema
+   escuro nem nos botões dourados (.ativo/.primario ficam de fora). */
+[data-tema='claro'] button:not(.ativo):not(.primario),
+[data-tema='claro'] a.toggle {
+  background: rgba(255, 255, 255, 0.62);
+  border-color: var(--surface-line);
+}
+[data-tema='claro'] button:not(.ativo):not(.primario):hover:not(:disabled),
+[data-tema='claro'] a.toggle:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: var(--gold);
+}
+[data-tema='claro'] input,
+[data-tema='claro'] select,
+[data-tema='claro'] textarea {
+  background: rgba(255, 255, 255, 0.62);
+}
+[data-tema='claro'] input::placeholder,
+[data-tema='claro'] textarea::placeholder {
+  color: var(--muted);
+}
+/* Lista suspensa dos <select> (o fundo escuro fixo destoava no claro). */
+[data-tema='claro'] .lobby-faixa select option {
+  background: #fff;
+  color: var(--ink);
+}
+/* Hover da linha de ranking: um leve toque escuro em vez do forte do tema escuro. */
+[data-tema='claro'] .ranking-linha:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
