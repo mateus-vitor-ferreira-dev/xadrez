@@ -106,7 +106,8 @@ public class PartidaService {
                 // busca o criador; flatMap com Optional.stream() descarta quem não existe mais
                 .flatMap(e -> usuarios.findByUsuario(e.getBrancoUsuario()).stream()
                         .filter(u -> dentroDaFaixa(u.getElo(), eloMin, eloMax))
-                        .map(u -> new PartidaAberta(e.getId(), e.getBrancoUsuario(), u.getElo())))
+                        .map(u -> new PartidaAberta(e.getId(), e.getBrancoUsuario(), u.getElo(),
+                                u.getTituloEquipado() == null ? null : u.getTituloEquipado().getRotulo())))
                 .toList();
     }
 

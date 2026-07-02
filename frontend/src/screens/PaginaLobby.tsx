@@ -172,6 +172,7 @@ export default function PaginaLobby() {
                   <span className="sala-inicial">{s.criador.charAt(0).toUpperCase()}</span>
                   <div className="sala-nome">
                     <strong>{s.criador}</strong>
+                    {s.titulo && <span className="sala-titulo">{s.titulo}</span>}
                     <span className="sala-status">🟢 Aguardando oponente</span>
                   </div>
                 </div>
