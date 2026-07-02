@@ -8,6 +8,7 @@ import PaginaAuth from './screens/PaginaAuth.tsx'
 import PaginaApelido from './screens/PaginaApelido.tsx'
 import PaginaLobby from './screens/PaginaLobby.tsx'
 import PaginaSkins from './screens/PaginaSkins.tsx'
+import PaginaComoJogar from './screens/PaginaComoJogar.tsx'
 import { AuthProvider } from './contexts/auth.tsx'
 import { SkinProvider } from './contexts/skin.tsx'
 
@@ -36,6 +37,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/apelido" element={<PaginaApelido />} />
               <Route path="/lobby" element={<PaginaLobby />} />
               <Route path="/skins" element={<PaginaSkins />} />
+              <Route path="/como-jogar" element={<PaginaComoJogar />} />
             </Routes>
           </BrowserRouter>
         </SkinProvider>

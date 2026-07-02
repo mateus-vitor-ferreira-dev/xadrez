@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
 import {
   buscarMovimentos,
@@ -451,6 +451,11 @@ function App() {
             </div>
 
             {erro && <p className="status alerta">{erro}</p>}
+
+            {/* Onboarding: quem nunca jogou vai direto para o manual. */}
+            <Link to="/como-jogar" className="como-jogar-link">
+              📖 Primeira vez? Aprenda a jogar
+            </Link>
 
             {/* Chamariz: mini-pódio do site + CTA pro online. Some sozinho se
                 ainda não há ninguém pontuando (ver TeaserRanking). */}
