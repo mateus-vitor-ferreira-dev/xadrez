@@ -17,6 +17,7 @@ import Tabuleiro from './Tabuleiro'
 import CarrosselModos from './CarrosselModos'
 import PecaModo from './PecaModo'
 import PerfilUsuario from './PerfilUsuario'
+import TeaserRanking from './TeaserRanking'
 import { useAuth } from './auth'
 import { type Modo } from './modos'
 import * as jogoCache from './jogoCache'
@@ -455,6 +456,10 @@ function App() {
             </div>
 
             {erro && <p className="status alerta">{erro}</p>}
+
+            {/* Chamariz: mini-pódio do site + CTA pro online. Some sozinho se
+                ainda não há ninguém pontuando (ver TeaserRanking). */}
+            <TeaserRanking />
           </div>
         </div>
       ) : (
