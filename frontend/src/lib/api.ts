@@ -36,6 +36,8 @@ export interface Autenticacao {
   elo: number
   /** Conta administradora: libera todas as skins independentemente do rank. */
   admin: boolean
+  /** Id do título equipado (ex.: 'CAVALEIRO'), ou null se nenhum. */
+  titulo: string | null
 }
 
 // Em produção VITE_API_URL aponta para o backend; em dev fica vazio (proxy do Vite).
@@ -104,11 +106,13 @@ export async function listarPartidasAbertas(eloMin?: number, eloMax?: number): P
 }
 
 // ---------- Ranking (leaderboards) ----------
-/** Uma linha de tabela do ranking: apelido, Elo e o rótulo do rank do jogador. */
+/** Uma linha de tabela do ranking: apelido, Elo, rótulo do rank e título equipado. */
 export interface LinhaRanking {
   usuario: string
   elo: number
   rank: string
+  /** Rótulo do título equipado (pronto para exibir), ou null. */
+  titulo: string | null
 }
 
 /** Resposta do /ranking: as duas tabelas + a faixa do usuário (para o título da direita). */
@@ -127,6 +131,22 @@ export async function buscarRanking(): Promise<Ranking> {
   const resposta = await fetch(`${API}/ranking`, { headers: comAuth() })
   if (!resposta.ok) throw new Error(`Erro ${resposta.status}`)
   return resposta.json() as Promise<Ranking>
+}
+
+// ---------- Título (caminho de troféus) ----------
+/**
+ * Equipa (ou remove, passando null) o título exibido ao lado do apelido. O
+ * servidor valida se o título está desbloqueado e devolve a sessão atualizada
+ * (mesmo formato do login), para o front regravar o auth.
+ */
+export async function equiparTitulo(titulo: string | null): Promise<Autenticacao> {
+  const resposta = await fetch(`${API}/usuario/titulo`, {
+    method: 'PUT',
+    headers: comAuth({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ titulo }),
+  })
+  if (!resposta.ok) throw new Error(`Erro ${resposta.status}`)
+  return resposta.json() as Promise<Autenticacao>
 }
 
 export async function jogadaIA(id: number, nivel: number): Promise<EstadoPartida> {

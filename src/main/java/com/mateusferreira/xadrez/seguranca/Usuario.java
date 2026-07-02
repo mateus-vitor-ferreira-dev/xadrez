@@ -1,5 +1,6 @@
 package com.mateusferreira.xadrez.seguranca;
 
+import com.mateusferreira.xadrez.dominio.Titulo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -64,6 +65,15 @@ public class Usuario {
     @Column(length = 20)
     private Role role = Role.USER;
 
+    /**
+     * Título exibido ao lado do apelido (ranking/perfil). NULL = nenhum. Só pode
+     * ser um dos títulos desbloqueados pelo Elo — a checagem é feita ao equipar
+     * (ver {@code UsuarioController}). Coluna nullable pelo mesmo motivo do role.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    private Titulo tituloEquipado;
+
     protected Usuario() {
     }
 
@@ -126,5 +136,14 @@ public class Usuario {
     /** Atalho: {@code true} se a conta é administradora (acesso total). */
     public boolean isAdmin() {
         return getRole() == Role.ADMIN;
+    }
+
+    /** Título equipado, ou {@code null} se nenhum. */
+    public Titulo getTituloEquipado() {
+        return tituloEquipado;
+    }
+
+    public void setTituloEquipado(Titulo tituloEquipado) {
+        this.tituloEquipado = tituloEquipado;
     }
 }

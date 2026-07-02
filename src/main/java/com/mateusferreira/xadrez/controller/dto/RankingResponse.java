@@ -20,7 +20,10 @@ public record RankingResponse(
         List<Linha> topSite,
         List<Linha> topRank) {
 
-    /** Uma linha de tabela: apelido, Elo e o rótulo do rank daquele jogador. */
-    public record Linha(String usuario, int elo, String rank) {
+    /**
+     * Uma linha de tabela: apelido, Elo, o rótulo do rank e o TÍTULO equipado
+     * (rótulo pronto para exibir, ou {@code null} se o jogador não equipou nenhum).
+     */
+    public record Linha(String usuario, int elo, String rank, String titulo) {
     }
 }
