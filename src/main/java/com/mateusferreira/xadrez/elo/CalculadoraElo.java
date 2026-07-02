@@ -25,11 +25,38 @@ import com.mateusferreira.xadrez.dominio.Resultado;
  */
 public final class CalculadoraElo {
 
-    /** Fator K: o ajuste máximo de rating por partida. */
+    /** Fator K padrão: o ajuste máximo de rating por partida (jogador estabelecido). */
     public static final int K = 32;
+
+    /**
+     * K "provisório": maior, usado nas primeiras partidas de um jogador para ele
+     * chegar rápido ao seu nível real (o Elo salta mais a cada resultado).
+     */
+    public static final int K_PROVISORIO = 64;
+
+    /** Nº de partidas ranqueadas em que o jogador ainda é considerado provisório. */
+    public static final int PARTIDAS_PROVISORIAS = 10;
 
     private CalculadoraElo() {
         // utilitária: só métodos estáticos.
+    }
+
+    /** K a usar conforme quantas partidas ranqueadas o jogador já disputou. */
+    public static int kDe(int jogosRanqueados) {
+        return jogosRanqueados < PARTIDAS_PROVISORIAS ? K_PROVISORIO : K;
+    }
+
+    /**
+     * Bônus modesto de Elo por maré de vitórias, aplicado SÓ ao vencedor e sobre
+     * o streak já atualizado (nº de vitórias consecutivas incluindo esta). Começa
+     * na 3ª vitória seguida e é limitado, para engajar sem virar alvo de farm:
+     * 3ª → +3, 4ª → +6, 5ª ou mais → +9 (teto).
+     */
+    public static int bonusStreak(int vitoriasSeguidas) {
+        if (vitoriasSeguidas < 3) {
+            return 0;
+        }
+        return Math.min((vitoriasSeguidas - 2) * 3, 9);
     }
 
     /**
@@ -41,6 +68,17 @@ public final class CalculadoraElo {
      * @return par (novo elo branco, novo elo preto)
      */
     public static Variacao novosRatings(int eloBranco, int eloPreto, Resultado resultado) {
+        return novosRatings(eloBranco, eloPreto, resultado, K, K);
+    }
+
+    /**
+     * Como {@link #novosRatings(int, int, Resultado)}, mas com um K por lado — é o
+     * que permite o K provisório (cada jogador pode estar numa fase diferente).
+     *
+     * @param kBranco fator K das brancas (ver {@link #kDe(int)})
+     * @param kPreto  fator K das pretas
+     */
+    public static Variacao novosRatings(int eloBranco, int eloPreto, Resultado resultado, int kBranco, int kPreto) {
         double scoreBranco = switch (resultado) {
             case VITORIA_BRANCO -> 1.0;
             case VITORIA_PRETO -> 0.0;
@@ -49,15 +87,15 @@ public final class CalculadoraElo {
                     "Não há Elo a aplicar numa partida em andamento.");
         };
         // O score das pretas é o complemento (a soma é sempre 1).
-        int novoBranco = novoRating(eloBranco, eloPreto, scoreBranco);
-        int novoPreto = novoRating(eloPreto, eloBranco, 1.0 - scoreBranco);
+        int novoBranco = novoRating(eloBranco, eloPreto, scoreBranco, kBranco);
+        int novoPreto = novoRating(eloPreto, eloBranco, 1.0 - scoreBranco, kPreto);
         return new Variacao(novoBranco, novoPreto, novoBranco - eloBranco, novoPreto - eloPreto);
     }
 
-    /** Novo rating de UM jogador dado seu score real (0, 0.5 ou 1). */
-    static int novoRating(int rating, int ratingOponente, double score) {
+    /** Novo rating de UM jogador dado seu score real (0, 0.5 ou 1) e seu fator K. */
+    static int novoRating(int rating, int ratingOponente, double score, int k) {
         double esperado = 1.0 / (1.0 + Math.pow(10, (ratingOponente - rating) / 400.0));
-        return (int) Math.round(rating + K * (score - esperado));
+        return (int) Math.round(rating + k * (score - esperado));
     }
 
     /** Resultado do cálculo: ratings novos e a variação (delta) de cada lado. */

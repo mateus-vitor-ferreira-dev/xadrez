@@ -48,4 +48,31 @@ class CalculadoraEloTest {
         assertThatThrownBy(() -> CalculadoraElo.novosRatings(1200, 1200, Resultado.EM_ANDAMENTO))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void kProvisorioAteDezJogos() {
+        // Jogador novo (poucos jogos) usa K maior; a partir de 10, o K padrão.
+        assertThat(CalculadoraElo.kDe(0)).isEqualTo(CalculadoraElo.K_PROVISORIO);
+        assertThat(CalculadoraElo.kDe(9)).isEqualTo(CalculadoraElo.K_PROVISORIO);
+        assertThat(CalculadoraElo.kDe(10)).isEqualTo(CalculadoraElo.K);
+    }
+
+    @Test
+    void kProvisorioFazOEloSaltarMais() {
+        // Mesma vitória equilibrada: com K provisório (64) o ganho é o dobro do padrão (32).
+        var provisorio = CalculadoraElo.novosRatings(800, 800, Resultado.VITORIA_BRANCO, 64, 64);
+        var padrao = CalculadoraElo.novosRatings(800, 800, Resultado.VITORIA_BRANCO, 32, 32);
+        assertThat(provisorio.deltaBranco()).isEqualTo(32);
+        assertThat(padrao.deltaBranco()).isEqualTo(16);
+    }
+
+    @Test
+    void bonusStreak_soComeçaNaTerceiraVitoriaEtemTeto() {
+        assertThat(CalculadoraElo.bonusStreak(1)).isZero();
+        assertThat(CalculadoraElo.bonusStreak(2)).isZero();
+        assertThat(CalculadoraElo.bonusStreak(3)).isEqualTo(3);
+        assertThat(CalculadoraElo.bonusStreak(4)).isEqualTo(6);
+        assertThat(CalculadoraElo.bonusStreak(5)).isEqualTo(9);
+        assertThat(CalculadoraElo.bonusStreak(20)).isEqualTo(9); // teto
+    }
 }
