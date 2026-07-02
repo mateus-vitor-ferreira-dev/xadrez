@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
-import { googleLogin, login, registrar } from './api'
-import { useAuth } from './auth'
-import BotaoGoogle from './BotaoGoogle'
+import { googleLogin, login, registrar } from '../lib/api'
+import { useAuth } from '../contexts/auth'
+import BotaoGoogle from '../components/BotaoGoogle'
 
 /**
  * Tela dedicada de autenticação. É UM único componente reusado nas duas rotas

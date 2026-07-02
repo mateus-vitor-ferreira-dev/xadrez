@@ -1,4 +1,4 @@
-import { MODOS, type Modo } from './modos'
+import { MODOS, type Modo } from '../lib/modos'
 
 /**
  * "Hero" da tela inicial: a peça-símbolo do modo selecionado, que CAI do alto e

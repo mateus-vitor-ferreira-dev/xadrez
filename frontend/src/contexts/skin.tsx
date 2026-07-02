@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
-import { svgDaPeca, temaPorId, type TemaPecas } from './skins'
+import { svgDaPeca, temaPorId, type TemaPecas } from '../themes/skins'
 
 // Estado da SKIN equipada — vive num Context (como o auth), pois o tabuleiro, o
 // inventário e o resto da árvore precisam ler/trocar a mesma skin. Persistimos a

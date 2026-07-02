@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { GOOGLE_CLIENT_ID } from './config'
+import { GOOGLE_CLIENT_ID } from '../lib/config'
 
 // Tipos mínimos da API global do Google Identity Services (window.google),
 // carregada pelo <script> em index.html.

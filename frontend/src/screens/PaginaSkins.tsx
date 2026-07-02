@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
-import { useAuth } from './auth'
-import { useSkin } from './skin'
-import { PecaSvg } from './skin'
-import { TEMAS, desbloqueado } from './skins'
+import { useAuth } from '../contexts/auth'
+import { useSkin } from '../contexts/skin'
+import { PecaSvg } from '../contexts/skin'
+import { TEMAS, desbloqueado } from '../themes/skins'
 
 // INVENTÁRIO de skins (estilo CS2/Valorant): uma vitrine com todos os temas de
 // peças. O jogador equipa o que quiser entre os DESBLOQUEADOS (o rank libera

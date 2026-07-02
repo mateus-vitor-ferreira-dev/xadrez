@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { PecaSvg } from './skin'
+import { PecaSvg } from '../contexts/skin'
 
 interface Props {
   tabuleiro: string
