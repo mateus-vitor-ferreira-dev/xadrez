@@ -16,3 +16,4 @@ dist/
 # Logs e sistema
 *.log
 .DS_Store
+.vercel

@@ -59,6 +59,13 @@ public class PartidaService {
         entity.setOnline(online);
         if (online) {
             entity.setBrancoUsuario(branco);
+            // Uma sala aberta por criador: remove as salas anteriores dele que ainda
+            // aguardavam oponente, para não acumular salas fantasma no lobby.
+            if (branco != null) {
+                repository.deleteAll(repository
+                        .findByOnlineTrueAndBrancoUsuarioAndPretoUsuarioIsNullAndResultado(
+                                branco, Resultado.EM_ANDAMENTO));
+            }
         }
         entity = repository.save(entity); // após salvar, a entidade tem id
         return montar(entity, partida);
