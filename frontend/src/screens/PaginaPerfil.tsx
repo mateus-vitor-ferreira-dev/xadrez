@@ -32,7 +32,6 @@ export default function PaginaPerfil() {
   // Estado dos campos editáveis. Só existe depois que o perfil carrega (ver effect).
   const [email, setEmail] = useState('')
   const [telefone, setTelefone] = useState('')
-  const [fotoUrl, setFotoUrl] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [salvo, setSalvo] = useState(false)
 
@@ -41,7 +40,6 @@ export default function PaginaPerfil() {
     if (perfil.data) {
       setEmail(perfil.data.email)
       setTelefone(perfil.data.telefone ?? '')
-      setFotoUrl(perfil.data.fotoUrl ?? '')
     }
   }, [perfil.data])
 
@@ -49,9 +47,8 @@ export default function PaginaPerfil() {
     mutationFn: (): Promise<Perfil> =>
       atualizarPerfil({
         email: email.trim(),
-        // Campos opcionais: vazio vira null (limpa no back).
+        // Telefone é opcional: vazio vira null (limpa no back).
         telefone: telefone.trim() || null,
-        fotoUrl: fotoUrl.trim() || null,
       }),
     onSuccess: (p) => {
       setErro(null)
@@ -97,15 +94,11 @@ export default function PaginaPerfil() {
           <p className="status alerta">Não foi possível carregar seu perfil. Recarregue a página.</p>
         ) : (
           <>
-            {/* Prévia da foto (ou avatar-inicial dourado, como na barra de topo). */}
+            {/* Avatar-inicial dourado (decorativo), igual ao da barra de topo. */}
             <div className="perfil-foto-previa">
-              {fotoUrl.trim() ? (
-                <img src={fotoUrl.trim()} alt="Foto de perfil" onError={(e) => (e.currentTarget.style.display = 'none')} />
-              ) : (
-                <span className="perfil-avatar-grande" aria-hidden="true">
-                  {inicial}
-                </span>
-              )}
+              <span className="perfil-avatar-grande" aria-hidden="true">
+                {inicial}
+              </span>
             </div>
 
             {/* Apelido: só leitura (troca de apelido está fora deste escopo). */}
@@ -131,16 +124,6 @@ export default function PaginaPerfil() {
                 placeholder="(11) 90000-0000"
                 value={telefone}
                 onChange={(e) => setTelefone(e.target.value)}
-              />
-            </label>
-
-            <label className="perfil-campo">
-              <span>Foto de perfil — URL (opcional)</span>
-              <input
-                type="url"
-                placeholder="https://…/minha-foto.jpg"
-                value={fotoUrl}
-                onChange={(e) => setFotoUrl(e.target.value)}
               />
             </label>
 

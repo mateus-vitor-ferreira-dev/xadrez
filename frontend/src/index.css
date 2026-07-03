@@ -1107,21 +1107,13 @@ a.toggle:hover {
 .perfil-box .auth-sub {
   text-align: center;
 }
-/* Prévia da foto: centralizada acima do formulário. */
+/* Avatar-inicial (decorativo): centralizado acima do formulário. */
 .perfil-foto-previa {
   display: flex;
   justify-content: center;
   margin: 4px 0 8px;
 }
-.perfil-foto-previa img {
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--gold);
-  box-shadow: 0 8px 22px -12px rgba(230, 192, 103, 0.7);
-}
-/* Avatar-inicial (sem foto): mesmo estilo dourado da barra, em tamanho maior. */
+/* Mesmo estilo dourado do avatar da barra, em tamanho maior. */
 .perfil-avatar-grande {
   display: grid;
   place-items: center;

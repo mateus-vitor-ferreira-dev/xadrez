@@ -78,13 +78,6 @@ public class Usuario {
     @Column(length = 20)
     private String telefone;
 
-    /**
-     * URL da foto de perfil (opcional). Guardamos só a URL — o arquivo em si vai
-     * para um serviço de imagens externo (a definir). Nullable.
-     */
-    @Column(length = 500)
-    private String fotoUrl;
-
     protected Usuario() {
     }
 
@@ -169,13 +162,5 @@ public class Usuario {
 
     public void setTelefone(String telefone) {
         this.telefone = telefone;
-    }
-
-    public String getFotoUrl() {
-        return fotoUrl;
-    }
-
-    public void setFotoUrl(String fotoUrl) {
-        this.fotoUrl = fotoUrl;
     }
 }

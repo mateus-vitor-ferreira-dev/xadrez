@@ -69,10 +69,10 @@ public class UsuarioController {
     }
 
     /**
-     * PUT /usuario/perfil — atualiza e-mail, telefone e foto do usuário logado.
+     * PUT /usuario/perfil — atualiza e-mail e telefone do usuário logado.
      * O e-mail é obrigatório e validado (formato + unicidade entre OUTRAS contas);
-     * telefone e fotoUrl são opcionais (vazio limpa o campo). Não mexe em apelido
-     * nem senha. Devolve o perfil já atualizado.
+     * telefone é opcional (vazio limpa o campo). Não mexe em apelido nem senha.
+     * Devolve o perfil já atualizado.
      */
     @PutMapping("/perfil")
     public PerfilResponse atualizarPerfil(@RequestBody AtualizarPerfilRequest req, Principal principal) {
@@ -89,14 +89,13 @@ public class UsuarioController {
 
         u.setEmail(email);
         u.setTelefone(normalizar(req.telefone()));
-        u.setFotoUrl(normalizar(req.fotoUrl()));
         repository.save(u);
         return perfilDe(u);
     }
 
     /** Monta o DTO de perfil a partir da entidade. */
     private PerfilResponse perfilDe(Usuario u) {
-        return new PerfilResponse(u.getUsuario(), u.getEmail(), u.getTelefone(), u.getFotoUrl());
+        return new PerfilResponse(u.getUsuario(), u.getEmail(), u.getTelefone());
     }
 
     /** Campo opcional: trim + vazio/branco vira NULL (limpa a coluna). */

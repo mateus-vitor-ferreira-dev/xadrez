@@ -188,8 +188,6 @@ export interface Perfil {
   email: string
   /** Opcional; null = não informado. */
   telefone: string | null
-  /** URL da foto de perfil; null = usa o avatar-inicial. */
-  fotoUrl: string | null
 }
 
 /** Busca o perfil atual do usuário logado (para preencher o formulário). */
@@ -200,13 +198,12 @@ export async function buscarPerfil(): Promise<Perfil> {
 }
 
 /**
- * Salva as alterações do perfil (e-mail, telefone e foto). O back valida o
- * e-mail (formato + unicidade) e devolve o perfil já atualizado.
+ * Salva as alterações do perfil (e-mail e telefone). O back valida o e-mail
+ * (formato + unicidade) e devolve o perfil já atualizado.
  */
 export async function atualizarPerfil(dados: {
   email: string
   telefone: string | null
-  fotoUrl: string | null
 }): Promise<Perfil> {
   const resposta = await fetchAuth(`${API}/usuario/perfil`, {
     method: 'PUT',
