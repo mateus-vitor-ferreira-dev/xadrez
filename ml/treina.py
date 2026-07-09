@@ -1,9 +1,10 @@
 """Treina o AvaliadorNeural e exporta o modelo em ONNX.
 
-Rede pequena (MLP 768 -> 256 -> 32 -> 1 com sigmoid na saida) treinada para
-prever a PROBABILIDADE DE VITORIA de quem esta na vez, sobre as posicoes
-preparadas pelo prepara_dados.py. A perda e MSE sobre a probabilidade — o
-mesmo alvo suave (cp -> sigmoid) usado por redes de avaliacao classicas.
+MLP 780 -> 512 -> 64 -> 1 com sigmoid na saida, treinado para prever a
+PROBABILIDADE DE VITORIA de quem esta na vez, sobre as posicoes preparadas
+pelo prepara_dados.py (12 planos de pecas + roque + en passant). A perda e
+MSE sobre a probabilidade — o mesmo alvo suave (cp -> sigmoid) usado por
+redes de avaliacao classicas.
 
 A exportacao ONNX e feita A MAO com onnx.helper a partir dos pesos treinados
 (MatMul/Add/Relu/Sigmoid), em vez de torch.onnx.export: o grafo resultante e
@@ -29,19 +30,19 @@ from onnx import TensorProto, helper
 from torch import nn
 
 ESCALA_CP = 173.7178  # mesma escala logistica do AvaliadorNeural.java
-FEATURES = 768
+FEATURES = 12 * 64 + 4 + 8  # planos + roque + en passant = 780
 SEMENTE = 20260709
 
 
 class RedeAvaliadora(nn.Module):
-    """MLP 768 -> 256 -> 32 -> 1; sigmoid na saida (probabilidade de vitoria)."""
+    """MLP 780 -> 512 -> 64 -> 1; sigmoid na saida (probabilidade de vitoria)."""
 
     def __init__(self) -> None:
         super().__init__()
         self.corpo = nn.Sequential(
-            nn.Linear(FEATURES, 256), nn.ReLU(),
-            nn.Linear(256, 32), nn.ReLU(),
-            nn.Linear(32, 1), nn.Sigmoid(),
+            nn.Linear(FEATURES, 512), nn.ReLU(),
+            nn.Linear(512, 64), nn.ReLU(),
+            nn.Linear(64, 1), nn.Sigmoid(),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

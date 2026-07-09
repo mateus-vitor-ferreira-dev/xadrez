@@ -8,19 +8,24 @@ exportação do modelo em ONNX consumido pelo `AvaliadorNeural` (Java).
 Definido em `backend/.../dominio/AvaliadorNeural.java` e reproduzido pelo
 `gera_modelo_dummy.py`:
 
-- **Entrada** `features` `float[1][768]`: 12 planos de 8x8 achatados, na
-  **ótica de quem avalia** — para as pretas o tabuleiro é espelhado na
-  vertical e as cores trocadas (a rede sempre "olha do seu lado"). Índice =
-  `(tipo*2 + lado)*64 + (linha*8 + coluna)`; tipo 0..5 = peão, cavalo, bispo,
-  torre, rainha, rei; lado 0 = peça de quem avalia, 1 = do oponente.
-  Casa ocupada = 1.0.
+- **Entrada** `features` `float[1][780]`, na **ótica de quem avalia** — para
+  as pretas o tabuleiro é espelhado na vertical e as cores trocadas (a rede
+  sempre "olha do seu lado"):
+  - `0..767`: 12 planos de 8x8 achatados. Índice =
+    `(tipo*2 + lado)*64 + (linha*8 + coluna)`; tipo 0..5 = peão, cavalo,
+    bispo, torre, rainha, rei; lado 0 = peça de quem avalia, 1 = do oponente.
+    Casa ocupada = 1.0.
+  - `768..771`: direitos de roque — meu (rei/dama), dele (rei/dama).
+  - `772..779`: coluna (a..h) do alvo de en passant, se houver.
+    (Alas e colunas são invariantes ao espelhamento vertical.)
 - **Saída** `float[1][1]`: probabilidade de vitória de **quem avalia** (0..1).
   O Java converte para centipeões (`cp = 173.7178 * ln(p/(1-p))`), já no
   ponto de vista que o negamax espera — sem negação.
 - Por que relativa? A avaliação depende de quem está na vez (tempo); a
   codificação relativa dá isso à rede de graça, elimina o risco de esquecer a
   negação e corta o espaço de entrada pela metade por simetria.
-- Limitações conhecidas da v1: roque e en passant não são codificados.
+- Histórico do contrato: v1/v2 usavam 768 features (sem roque/en passant);
+  a v3 estendeu para 780 e aumentou a rede (780 -> 512 -> 64 -> 1).
 
 ## Scripts (rodar da raiz do repositório)
 

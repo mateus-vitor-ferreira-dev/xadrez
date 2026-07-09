@@ -17,13 +17,19 @@ import java.nio.FloatBuffer;
  *
  * <p><b>Contrato do modelo</b> (o pipeline de treino em ml/ DEVE exportar assim):
  * <ul>
- *   <li><b>Entrada:</b> tensor float [1][768] — 12 planos de 8x8 achatados,
- *       codificados NA ÓTICA DE QUEM AVALIA ('cor'): quando 'cor' é PRETO, o
- *       tabuleiro é espelhado na vertical (linha -&gt; 7-linha) e as cores das
- *       peças são trocadas. Índice = (tipo*2 + lado)*64 + (linha*8 + coluna),
- *       com tipo 0..5 = peão, cavalo, bispo, torre, rainha, rei e
- *       lado 0 = peça de quem avalia, 1 = peça do oponente.
- *       Casa ocupada = 1.0, vazia = 0.0.</li>
+ *   <li><b>Entrada:</b> tensor float [1][780], NA ÓTICA DE QUEM AVALIA ('cor'):
+ *       quando 'cor' é PRETO, o tabuleiro é espelhado na vertical
+ *       (linha -&gt; 7-linha) e as cores das peças são trocadas.
+ *       <ul>
+ *         <li>0..767: 12 planos de 8x8 achatados. Índice =
+ *             (tipo*2 + lado)*64 + (linha*8 + coluna), com tipo 0..5 = peão,
+ *             cavalo, bispo, torre, rainha, rei e lado 0 = peça de quem avalia,
+ *             1 = do oponente. Casa ocupada = 1.0.</li>
+ *         <li>768..771: direitos de roque — meu na ala do rei, meu na ala da
+ *             dama, dele na ala do rei, dele na ala da dama.</li>
+ *         <li>772..779: coluna (a..h) do alvo de en passant, se houver.
+ *             (Alas e colunas são invariantes ao espelhamento vertical.)</li>
+ *       </ul></li>
  *   <li><b>Saída:</b> tensor float [1][1] = probabilidade de VITÓRIA DE QUEM
  *       AVALIA (0..1). Treinar sobre probabilidade (cp -&gt; sigmoid) satura
  *       melhor que centipeões crus em posições muito ganhas/perdidas.</li>
@@ -54,7 +60,10 @@ public class AvaliadorNeural implements Avaliador, AutoCloseable {
 
     private static final int PLANOS = 12;
     private static final int CASAS = 64;
-    private static final int FEATURES = PLANOS * CASAS; // 768
+    // 12 planos + 4 direitos de roque + 8 colunas de en passant = 780
+    private static final int FEATURES = PLANOS * CASAS + 4 + 8;
+    private static final int BASE_ROQUE = PLANOS * CASAS;      // 768
+    private static final int BASE_ENPASSANT = BASE_ROQUE + 4;  // 772
 
     private final OrtEnvironment ambiente;
     private final OrtSession sessao;
@@ -92,9 +101,11 @@ public class AvaliadorNeural implements Avaliador, AutoCloseable {
     }
 
     /**
-     * Codifica a posição nos 768 floats do contrato, na ótica de 'cor': para as
+     * Codifica a posição nos 780 floats do contrato, na ótica de 'cor': para as
      * pretas o tabuleiro é espelhado na vertical e as cores trocadas — a rede
      * sempre "olha o tabuleiro do seu lado", como um jogador que gira a mesa.
+     * Roque e en passant entram como features extras (alas e colunas não mudam
+     * com o espelhamento vertical).
      */
     private float[] extrairFeatures(Partida partida, Cor cor) {
         Tabuleiro t = partida.getTabuleiro();
@@ -109,6 +120,18 @@ public class AvaliadorNeural implements Avaliador, AutoCloseable {
                     features[plano * CASAS + linhaRelativa * 8 + coluna] = 1.0f;
                 }
             }
+        }
+        // Direitos de roque relativos: maiúsculas = brancas no formato "KQkq".
+        String roque = partida.direitosDeRoque();
+        boolean brancoAvalia = (cor == Cor.BRANCO);
+        if (roque.indexOf(brancoAvalia ? 'K' : 'k') >= 0) features[BASE_ROQUE] = 1.0f;
+        if (roque.indexOf(brancoAvalia ? 'Q' : 'q') >= 0) features[BASE_ROQUE + 1] = 1.0f;
+        if (roque.indexOf(brancoAvalia ? 'k' : 'K') >= 0) features[BASE_ROQUE + 2] = 1.0f;
+        if (roque.indexOf(brancoAvalia ? 'q' : 'Q') >= 0) features[BASE_ROQUE + 3] = 1.0f;
+        // Coluna do alvo de en passant (se houver).
+        Posicao enPassant = partida.getAlvoEnPassant();
+        if (enPassant != null) {
+            features[BASE_ENPASSANT + enPassant.coluna()] = 1.0f;
         }
         return features;
     }
