@@ -53,10 +53,41 @@ Definido em `backend/.../dominio/AvaliadorNeural.java` e reproduzido pelo
 
 `ml/dados/` e `ml/saida/` ficam fora do git (ver `.gitignore` da raiz).
 
-## Próximos passos (fase 4)
+## Fase 4 — torneio entre avaliadores (ablation study)
 
-- Torneio/ablation entre AvaliadorMaterial, AvaliadorPosicional e
-  AvaliadorNeural (suíte de aberturas variadas — auto-jogo determinístico
-  repete partidas; taxa de vitória com intervalo de confiança).
-- Enriquecer features (roque/en passant) e dataset maior, se o torneio
-  justificar.
+O harness vive no backend (`com.mateusferreira.xadrez.torneio`): os três
+avaliadores jogam entre si com a mesma busca e o mesmo tempo por lance, sobre
+uma suíte de 20 aberturas jogadas com as duas cores. Rodar (da pasta
+`backend/`):
+
+```
+mvn -q compile exec:java \
+    -Dexec.args="--tempo 100 --aberturas 20 --modelo ../ml/saida/modelo.onnx"
+```
+
+Saída: placar por pareamento com IC 95% e diferença de Elo.
+
+### Primeiros resultados (2026-07-09; 500k posições, 10 épocas, 100 ms/lance)
+
+| Pareamento             | Placar (1º) | Score        | Elo (IC 95%)        |
+|------------------------|-------------|--------------|---------------------|
+| Material x Posicional  | +2 =31 -7   | 43,8% ± 7,1  | -44 [-95, +6]       |
+| Material x Neural      | +14 =25 -1  | 66,3% ± 8,0  | +117 [+58, +184]    |
+| Posicional x Neural    | +32 =6 -2   | 87,5% ± 8,3  | +338 [+232, +544]   |
+
+Leitura: as piece-square tables valem ~+44 Elo sobre material puro (IC ainda
+cruza o zero; mais jogos apertariam a barra). A rede v1 PERDE para os dois,
+com significância. Diagnóstico: (1) 500k posições/10 épocas dão MAE ~275 cp na
+validação — avaliação mais grosseira que uma PST calibrada; (2) a inferência
+ONNX custa ordens de magnitude mais por nó que a avaliação artesanal, e com o
+MESMO tempo por lance a rede busca bem mais raso. Resultado negativo, medido e
+explicado — é o que o ablation existe para mostrar.
+
+## Melhorias futuras
+
+- Dataset/épocas maiores (o MSE de validação ainda caía na época 10) e rede
+  um pouco maior — o caminho mais direto para a Neural competir.
+- Reduzir o custo por nó: lote de inferências, ou usar a rede só na folha da
+  quiescência (as buscas internas com avaliação barata).
+- Enriquecer features (roque/en passant).
+- Mais aberturas na suíte para ICs mais apertados.
