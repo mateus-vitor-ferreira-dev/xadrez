@@ -3,15 +3,18 @@
 O dummy segue o MESMO contrato que o modelo treinado de verdade seguirá
 (ver AvaliadorNeural.java):
 
-  entrada: "features" float[1][768] — 12 planos de 8x8 achatados.
-           indice = (tipo*2 + cor)*64 + (linha*8 + coluna)
+  entrada: "features" float[1][768] — 12 planos de 8x8 achatados, na OTICA DE
+           QUEM AVALIA (para as pretas o tabuleiro e espelhado e as cores
+           trocadas — quem codifica assim e o lado Java).
+           indice = (tipo*2 + lado)*64 + (linha*8 + coluna)
            tipo 0..5 = peao, cavalo, bispo, torre, rainha, rei
-           cor 0 = branco, 1 = preto; casa ocupada = 1.0
-  saida:   "prob_vitoria_brancas" float[1][1] — probabilidade 0..1
+           lado 0 = peca de quem avalia, 1 = do oponente; casa ocupada = 1.0
+  saida:   "prob_vitoria" float[1][1] — probabilidade de VITORIA DE QUEM
+           AVALIA, 0..1
 
 Em vez de pesos treinados, o dummy usa o VALOR DE MATERIAL de cada peca:
-peso = +valor_cp/ESCALA para pecas brancas e -valor_cp/ESCALA para pretas,
-com uma sigmoid na saida. Como o Java converte de volta com
+peso = +valor_cp/ESCALA nos planos de quem avalia e -valor_cp/ESCALA nos do
+oponente, com uma sigmoid na saida. Como o Java converte de volta com
 cp = ESCALA * ln(p/(1-p)), o resultado e EXATAMENTE a diferenca de material
 em centipeoes — ou seja, o dummy se comporta como o AvaliadorMaterial.
 Isso permite testar toda a integracao (features -> ONNX -> conversao -> sinal)
@@ -37,18 +40,18 @@ FEATURES = 12 * 64
 
 
 def pesos_material() -> np.ndarray:
-    """Vetor [768, 1]: +valor/ESCALA nos planos brancos, -valor/ESCALA nos pretos."""
+    """Vetor [768, 1]: +valor/ESCALA nos planos de quem avalia, - nos do oponente."""
     w = np.zeros((FEATURES, 1), dtype=np.float32)
     for tipo, valor_cp in enumerate(VALORES_CP):
         peso = valor_cp / ESCALA_CP
-        w[(tipo * 2 + 0) * 64 : (tipo * 2 + 1) * 64, 0] = peso   # brancas
-        w[(tipo * 2 + 1) * 64 : (tipo * 2 + 2) * 64, 0] = -peso  # pretas
+        w[(tipo * 2 + 0) * 64 : (tipo * 2 + 1) * 64, 0] = peso   # minhas pecas
+        w[(tipo * 2 + 1) * 64 : (tipo * 2 + 2) * 64, 0] = -peso  # pecas dele
     return w
 
 
 def main() -> None:
     entrada = helper.make_tensor_value_info("features", TensorProto.FLOAT, [1, FEATURES])
-    saida = helper.make_tensor_value_info("prob_vitoria_brancas", TensorProto.FLOAT, [1, 1])
+    saida = helper.make_tensor_value_info("prob_vitoria", TensorProto.FLOAT, [1, 1])
 
     pesos = helper.make_tensor(
         "pesos", TensorProto.FLOAT, [FEATURES, 1], pesos_material().flatten().tolist()
@@ -57,7 +60,7 @@ def main() -> None:
     grafo = helper.make_graph(
         nodes=[
             helper.make_node("MatMul", ["features", "pesos"], ["logito"]),
-            helper.make_node("Sigmoid", ["logito"], ["prob_vitoria_brancas"]),
+            helper.make_node("Sigmoid", ["logito"], ["prob_vitoria"]),
         ],
         name="avaliador-dummy-material",
         inputs=[entrada],

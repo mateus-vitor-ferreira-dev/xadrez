@@ -15,24 +15,30 @@ import java.nio.FloatBuffer;
  * Runtime. É a terceira implementação de {@link Avaliador} — a busca do
  * {@link MotorIA} não sabe (nem precisa saber) que a heurística virou uma rede.
  *
- * <p><b>Contrato do modelo</b> (o pipeline de treino DEVE exportar assim):
+ * <p><b>Contrato do modelo</b> (o pipeline de treino em ml/ DEVE exportar assim):
  * <ul>
- *   <li><b>Entrada:</b> tensor float [1][768] — 12 planos de 8x8 achatados.
- *       Índice = (tipo*2 + corDaPeca)*64 + (linha*8 + coluna), com
- *       tipo 0..5 = peão, cavalo, bispo, torre, rainha, rei e
- *       corDaPeca 0 = branco, 1 = preto (a MESMA convenção do Zobrist em
- *       {@link MotorIA}). Casa ocupada = 1.0, vazia = 0.0. O tabuleiro é
- *       codificado em coordenadas ABSOLUTAS (ótica das brancas), sem espelhar.</li>
- *   <li><b>Saída:</b> tensor float [1][1] = probabilidade de VITÓRIA DAS BRANCAS
- *       (0..1). Treinar sobre probabilidade (cp -&gt; sigmoid) satura melhor que
- *       centipeões crus em posições muito ganhas/perdidas.</li>
+ *   <li><b>Entrada:</b> tensor float [1][768] — 12 planos de 8x8 achatados,
+ *       codificados NA ÓTICA DE QUEM AVALIA ('cor'): quando 'cor' é PRETO, o
+ *       tabuleiro é espelhado na vertical (linha -&gt; 7-linha) e as cores das
+ *       peças são trocadas. Índice = (tipo*2 + lado)*64 + (linha*8 + coluna),
+ *       com tipo 0..5 = peão, cavalo, bispo, torre, rainha, rei e
+ *       lado 0 = peça de quem avalia, 1 = peça do oponente.
+ *       Casa ocupada = 1.0, vazia = 0.0.</li>
+ *   <li><b>Saída:</b> tensor float [1][1] = probabilidade de VITÓRIA DE QUEM
+ *       AVALIA (0..1). Treinar sobre probabilidade (cp -&gt; sigmoid) satura
+ *       melhor que centipeões crus em posições muito ganhas/perdidas.</li>
  * </ul>
  *
+ * <p>Por que relativa e não absoluta? Duas razões. (1) A avaliação de xadrez
+ * depende de QUEM está na vez (o "tempo" vale décimos de peão e decide posições
+ * táticas); com a codificação relativa a rede enxerga isso sem precisar de uma
+ * feature extra. (2) A nota já sai do ponto de vista certo para o negamax —
+ * não há negação a esquecer, que é o bug clássico de engine neural que "joga
+ * quase bem". De quebra, a simetria espelhada corta o espaço de entrada pela
+ * metade (as brancas e as pretas compartilham o que a rede aprende).
+ *
  * <p>A conversão probabilidade -&gt; centipeões usa a escala logística clássica
- * (cp = 173.7178 * ln(p/(1-p)), equivalente a 400*log10 das odds). E como o
- * negamax espera a nota do ponto de vista de QUEM ESTÁ NA VEZ, o resultado é
- * NEGADO quando 'cor' é PRETO — esquecer essa negação é o bug clássico de
- * engine neural que "joga quase bem".
+ * (cp = 173.7178 * ln(p/(1-p)), equivalente a 400*log10 das odds).
  *
  * <p>Thread-safety: {@link OrtSession#run} é seguro para chamadas concorrentes,
  * então uma única instância pode servir várias buscas ao mesmo tempo (o mesmo
@@ -80,40 +86,44 @@ public class AvaliadorNeural implements Avaliador, AutoCloseable {
 
     @Override
     public int avaliar(Partida partida, Cor cor) {
-        double probBrancas = inferir(extrairFeatures(partida));
-        int cpBrancas = paraCentipeoes(probBrancas);
-        // Nota sempre do ponto de vista de 'cor' (contrato do Avaliador/negamax).
-        return (cor == Cor.BRANCO) ? cpBrancas : -cpBrancas;
+        // Codificação relativa: a probabilidade já sai do ponto de vista de
+        // 'cor', que é exatamente o que o negamax espera. Sem negação.
+        return paraCentipeoes(inferir(extrairFeatures(partida, cor)));
     }
 
-    /** Codifica a posição nos 768 floats do contrato (12 planos de 8x8). */
-    private float[] extrairFeatures(Partida partida) {
+    /**
+     * Codifica a posição nos 768 floats do contrato, na ótica de 'cor': para as
+     * pretas o tabuleiro é espelhado na vertical e as cores trocadas — a rede
+     * sempre "olha o tabuleiro do seu lado", como um jogador que gira a mesa.
+     */
+    private float[] extrairFeatures(Partida partida, Cor cor) {
         Tabuleiro t = partida.getTabuleiro();
         float[] features = new float[FEATURES];
         for (int linha = 0; linha < 8; linha++) {
             for (int coluna = 0; coluna < 8; coluna++) {
                 Peca peca = t.pecaEm(new Posicao(linha, coluna));
                 if (peca != null) {
-                    features[indicePlano(peca) * CASAS + linha * 8 + coluna] = 1.0f;
+                    int linhaRelativa = (cor == Cor.BRANCO) ? linha : 7 - linha;
+                    int lado = (peca.getCor() == cor) ? 0 : 1; // 0 = minha, 1 = dele
+                    int plano = tipo(peca) * 2 + lado;
+                    features[plano * CASAS + linhaRelativa * 8 + coluna] = 1.0f;
                 }
             }
         }
         return features;
     }
 
-    /** Plano 0..11 da peça: tipo (0..5) * 2 + cor (branco 0, preto 1) — como no Zobrist. */
-    private int indicePlano(Peca peca) {
-        int tipo;
-        if (peca instanceof Peao) tipo = 0;
-        else if (peca instanceof Cavalo) tipo = 1;
-        else if (peca instanceof Bispo) tipo = 2;
-        else if (peca instanceof Torre) tipo = 3;
-        else if (peca instanceof Rainha) tipo = 4;
-        else tipo = 5; // Rei
-        return tipo * 2 + (peca.getCor() == Cor.BRANCO ? 0 : 1);
+    /** Tipo 0..5 da peça (peão, cavalo, bispo, torre, rainha, rei) — como no Zobrist. */
+    private int tipo(Peca peca) {
+        if (peca instanceof Peao) return 0;
+        if (peca instanceof Cavalo) return 1;
+        if (peca instanceof Bispo) return 2;
+        if (peca instanceof Torre) return 3;
+        if (peca instanceof Rainha) return 4;
+        return 5; // Rei
     }
 
-    /** Roda a rede e devolve a probabilidade de vitória das brancas (0..1). */
+    /** Roda a rede e devolve a probabilidade de vitória de quem avalia (0..1). */
     private double inferir(float[] features) {
         try (OnnxTensor entrada = OnnxTensor.createTensor(
                 ambiente, FloatBuffer.wrap(features), new long[]{1, FEATURES});
@@ -125,7 +135,7 @@ public class AvaliadorNeural implements Avaliador, AutoCloseable {
         }
     }
 
-    /** Probabilidade (ótica das brancas) -> centipeões, pela escala logística. */
+    /** Probabilidade (ótica de quem avalia) -> centipeões, pela escala logística. */
     private int paraCentipeoes(double prob) {
         double p = Math.min(1 - PROB_MIN, Math.max(PROB_MIN, prob));
         return (int) Math.round(ESCALA_CP * Math.log(p / (1 - p)));

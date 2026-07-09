@@ -17,3 +17,8 @@ dist/
 *.log
 .DS_Store
 .vercel
+
+# Pipeline de ML: dados baixados e modelos treinados nao sao versionados
+# (o dummy de teste, pequeno e gerado por script, fica em backend/src/test/resources)
+ml/dados/
+ml/saida/
