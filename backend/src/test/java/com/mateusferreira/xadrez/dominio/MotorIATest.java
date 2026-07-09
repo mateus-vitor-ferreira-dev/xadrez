@@ -137,4 +137,22 @@ class MotorIATest {
         assertFalse(partida.movimentosLegais(jogada.origem()).isEmpty());
         assertTrue(partida.movimentosLegais(jogada.origem()).contains(jogada.destino()));
     }
+
+    @Test
+    void aceitaAvaliadorInjetado() {
+        // Com um avaliador só de material, o motor ainda ganha a dama pendurada:
+        // prova que a função de avaliação é intercambiável via construtor.
+        MotorIA motorMaterial = new MotorIA(new AvaliadorMaterial());
+        Tabuleiro t = new Tabuleiro();
+        t.colocarPeca(new Rei(Cor.BRANCO), de("e1"));
+        t.colocarPeca(new Rainha(Cor.BRANCO), de("a4"));
+        t.colocarPeca(new Rei(Cor.PRETO), de("e8"));
+        t.colocarPeca(new Torre(Cor.PRETO), de("a8"));
+        Partida partida = new Partida(t, Cor.PRETO);
+
+        Jogada jogada = motorMaterial.melhorJogada(partida, 1).orElseThrow();
+
+        assertEquals(de("a8"), jogada.origem());
+        assertEquals(de("a4"), jogada.destino());
+    }
 }

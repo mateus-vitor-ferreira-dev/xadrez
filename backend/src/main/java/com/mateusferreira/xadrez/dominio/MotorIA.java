@@ -11,7 +11,8 @@ import java.util.Random;
  *
  * Ideia: a IA simula o jogo 'profundidade' lances à frente, assumindo que os
  * dois lados jogam o melhor possível, e escolhe o lance que leva à melhor
- * posição para ela. A "nota" de uma posição é a vantagem de material.
+ * posição para ela. A "nota" de uma posição vem de um {@link Avaliador}
+ * intercambiável (material, posicional, ...), injetado no construtor.
  *
  * A poda alpha-beta corta muito mais quando os lances promissores são vistos
  * PRIMEIRO. Por isso ordenamos os lances antes de percorrê-los: capturas na
@@ -38,8 +39,6 @@ public class MotorIA {
     private static final int INFINITO = 9_999_999;
     // Toda captura pontua acima de qualquer lance quieto na ordenação.
     private static final int BASE_CAPTURA = 10_000;
-    // Soma dos pesos de fase na posição inicial (meio-jogo pleno). Ver faseDoJogo.
-    private static final int FASE_TOTAL = 24;
     // Teto de profundidade do aprofundamento iterativo (o tempo é quem manda antes).
     private static final int PROFUNDIDADE_MAX = 64;
 
@@ -69,6 +68,19 @@ public class MotorIA {
         }
     }
     private static final TempoEsgotado TEMPO_ESGOTADO = new TempoEsgotado();
+
+    // Função de avaliação (ponto de extensão): material, posicional, neural...
+    private final Avaliador avaliador;
+
+    /** Motor com o avaliador padrão (material + posicional). */
+    public MotorIA() {
+        this(new AvaliadorPosicional());
+    }
+
+    /** Motor com um avaliador específico — usado em torneios/experimentos. */
+    public MotorIA(Avaliador avaliador) {
+        this.avaliador = avaliador;
+    }
 
     /**
      * Escolhe o melhor lance a uma 'profundidade' FIXA. Devolve vazio se não
@@ -246,7 +258,7 @@ public class MotorIA {
             throw TEMPO_ESGOTADO;
         }
         Cor cor = partida.getJogadorAtual();
-        int standPat = avaliar(partida, cor);
+        int standPat = avaliador.avaliar(partida, cor);
         if (standPat >= beta) {
             return beta;
         }
@@ -326,76 +338,6 @@ public class MotorIA {
         return tipo * 2 + (peca.getCor() == Cor.BRANCO ? 0 : 1);
     }
 
-    /**
-     * Nota da posição do ponto de vista de 'cor': material (em centipeões) MAIS
-     * bônus posicional (piece-square tables). Sem noção posicional a IA só
-     * reagia a capturas; com as tabelas ela desenvolve peças ao centro, adianta
-     * peões e mantém o rei seguro na abertura (e ativo no final).
-     */
-    private int avaliar(Partida partida, Cor cor) {
-        Tabuleiro t = partida.getTabuleiro();
-        int fase = faseDoJogo(t);
-        int total = 0;
-        for (Posicao p : t.posicoesDe(cor)) {
-            total += valor(t.pecaEm(p)) + bonusPosicional(t.pecaEm(p), p, cor, fase);
-        }
-        Cor adversario = cor.oposta();
-        for (Posicao p : t.posicoesDe(adversario)) {
-            total -= valor(t.pecaEm(p)) + bonusPosicional(t.pecaEm(p), p, adversario, fase);
-        }
-        return total;
-    }
-
-    /** Valor clássico de cada peça em centipeões (o rei não conta: nunca é capturado). */
-    private int valor(Peca peca) {
-        if (peca instanceof Peao) return 100;
-        if (peca instanceof Cavalo) return 320;
-        if (peca instanceof Bispo) return 330;
-        if (peca instanceof Torre) return 500;
-        if (peca instanceof Rainha) return 900;
-        return 0;
-    }
-
-    /**
-     * Bônus posicional da peça na casa 'pos', do ponto de vista da cor DELA.
-     * As tabelas são escritas na ótica das brancas (linha 0 = 1ª fileira); para
-     * as pretas espelhamos a fileira (7 - linha). O rei usa avaliação "tapered":
-     * interpola entre a tabela de meio-jogo e a de final conforme a 'fase'.
-     */
-    private int bonusPosicional(Peca peca, Posicao pos, Cor cor, int fase) {
-        int linha = (cor == Cor.BRANCO) ? pos.linha() : 7 - pos.linha();
-        int col = pos.coluna();
-        if (peca instanceof Peao) return PST_PEAO[linha][col];
-        if (peca instanceof Cavalo) return PST_CAVALO[linha][col];
-        if (peca instanceof Bispo) return PST_BISPO[linha][col];
-        if (peca instanceof Torre) return PST_TORRE[linha][col];
-        if (peca instanceof Rainha) return PST_RAINHA[linha][col];
-        if (peca instanceof Rei) {
-            return (PST_REI_MEIO[linha][col] * fase
-                    + PST_REI_FIM[linha][col] * (FASE_TOTAL - fase)) / FASE_TOTAL;
-        }
-        return 0;
-    }
-
-    /**
-     * "Fase" do jogo pelo material não-peão em campo (cavalo/bispo=1, torre=2,
-     * dama=4). {@link #FASE_TOTAL} = posição inicial (meio-jogo pleno); perto de
-     * 0 = final. Usada para interpolar as tabelas do rei.
-     */
-    private int faseDoJogo(Tabuleiro t) {
-        int fase = 0;
-        for (Posicao p : t.posicoesDe(Cor.BRANCO)) fase += pesoFase(t.pecaEm(p));
-        for (Posicao p : t.posicoesDe(Cor.PRETO)) fase += pesoFase(t.pecaEm(p));
-        return Math.min(fase, FASE_TOTAL);
-    }
-
-    private int pesoFase(Peca peca) {
-        if (peca instanceof Cavalo || peca instanceof Bispo) return 1;
-        if (peca instanceof Torre) return 2;
-        if (peca instanceof Rainha) return 4;
-        return 0;
-    }
-
     /** Todos os lances legais do jogador 'cor' (origem -> cada destino legal). */
     private List<Jogada> jogadasLegais(Partida partida, Cor cor) {
         List<Jogada> jogadas = new ArrayList<>();
@@ -428,7 +370,7 @@ public class MotorIA {
         if (!ehCaptura(partida, jogada)) {
             return 0;
         }
-        int atacante = valor(partida.getTabuleiro().pecaEm(jogada.origem()));
+        int atacante = AvaliadorMaterial.valor(partida.getTabuleiro().pecaEm(jogada.origem()));
         return BASE_CAPTURA + 10 * valorVitima(partida, jogada) - atacante;
     }
 
@@ -450,96 +392,11 @@ public class MotorIA {
         Tabuleiro t = partida.getTabuleiro();
         Peca alvo = t.pecaEm(jogada.destino());
         if (alvo != null) {
-            return valor(alvo);
+            return AvaliadorMaterial.valor(alvo);
         }
         // En passant: a vítima é o peão que ficou na fileira da origem, coluna do destino.
         Peca peaoCapturado = t.pecaEm(new Posicao(jogada.origem().linha(), jogada.destino().coluna()));
-        return peaoCapturado == null ? 0 : valor(peaoCapturado);
+        return peaoCapturado == null ? 0 : AvaliadorMaterial.valor(peaoCapturado);
     }
 
-    // ---------------------------------------------------------------------
-    // Piece-square tables (valores em centipeões), na ótica das BRANCAS:
-    // linha 0 = 1ª fileira (casa das brancas), coluna 0 = coluna 'a'. Para as
-    // pretas, bonusPosicional espelha a fileira (7 - linha). Baseadas na
-    // "Simplified Evaluation Function" (Tomasz Michniewski).
-    // ---------------------------------------------------------------------
-
-    private static final int[][] PST_PEAO = {
-            {  0,   0,   0,   0,   0,   0,   0,   0},
-            {  5,  10,  10, -20, -20,  10,  10,   5},
-            {  5,  -5, -10,   0,   0, -10,  -5,   5},
-            {  0,   0,   0,  20,  20,   0,   0,   0},
-            {  5,   5,  10,  25,  25,  10,   5,   5},
-            { 10,  10,  20,  30,  30,  20,  10,  10},
-            { 50,  50,  50,  50,  50,  50,  50,  50},
-            {  0,   0,   0,   0,   0,   0,   0,   0},
-    };
-
-    private static final int[][] PST_CAVALO = {
-            {-50, -40, -30, -30, -30, -30, -40, -50},
-            {-40, -20,   0,   5,   5,   0, -20, -40},
-            {-30,   5,  10,  15,  15,  10,   5, -30},
-            {-30,   0,  15,  20,  20,  15,   0, -30},
-            {-30,   5,  15,  20,  20,  15,   5, -30},
-            {-30,   0,  10,  15,  15,  10,   0, -30},
-            {-40, -20,   0,   0,   0,   0, -20, -40},
-            {-50, -40, -30, -30, -30, -30, -40, -50},
-    };
-
-    private static final int[][] PST_BISPO = {
-            {-20, -10, -10, -10, -10, -10, -10, -20},
-            {-10,   5,   0,   0,   0,   0,   5, -10},
-            {-10,  10,  10,  10,  10,  10,  10, -10},
-            {-10,   0,  10,  10,  10,  10,   0, -10},
-            {-10,   5,   5,  10,  10,   5,   5, -10},
-            {-10,   0,   5,  10,  10,   5,   0, -10},
-            {-10,   0,   0,   0,   0,   0,   0, -10},
-            {-20, -10, -10, -10, -10, -10, -10, -20},
-    };
-
-    private static final int[][] PST_TORRE = {
-            {  0,   0,   0,   5,   5,   0,   0,   0},
-            { -5,   0,   0,   0,   0,   0,   0,  -5},
-            { -5,   0,   0,   0,   0,   0,   0,  -5},
-            { -5,   0,   0,   0,   0,   0,   0,  -5},
-            { -5,   0,   0,   0,   0,   0,   0,  -5},
-            { -5,   0,   0,   0,   0,   0,   0,  -5},
-            {  5,  10,  10,  10,  10,  10,  10,   5},
-            {  0,   0,   0,   0,   0,   0,   0,   0},
-    };
-
-    private static final int[][] PST_RAINHA = {
-            {-20, -10, -10,  -5,  -5, -10, -10, -20},
-            {-10,   0,   5,   0,   0,   0,   0, -10},
-            {-10,   5,   5,   5,   5,   5,   0, -10},
-            {  0,   0,   5,   5,   5,   5,   0,  -5},
-            { -5,   0,   5,   5,   5,   5,   0,  -5},
-            {-10,   0,   5,   5,   5,   5,   0, -10},
-            {-10,   0,   0,   0,   0,   0,   0, -10},
-            {-20, -10, -10,  -5,  -5, -10, -10, -20},
-    };
-
-    // Rei no MEIO-JOGO: quer ficar recolhido atrás dos peões (fileiras 1-2).
-    private static final int[][] PST_REI_MEIO = {
-            { 20,  30,  10,   0,   0,  10,  30,  20},
-            { 20,  20,   0,   0,   0,   0,  20,  20},
-            {-10, -20, -20, -20, -20, -20, -20, -10},
-            {-20, -30, -30, -40, -40, -30, -30, -20},
-            {-30, -40, -40, -50, -50, -40, -40, -30},
-            {-30, -40, -40, -50, -50, -40, -40, -30},
-            {-30, -40, -40, -50, -50, -40, -40, -30},
-            {-30, -40, -40, -50, -50, -40, -40, -30},
-    };
-
-    // Rei no FINAL: quer ir para o centro ajudar (rei ativo).
-    private static final int[][] PST_REI_FIM = {
-            {-50, -30, -30, -30, -30, -30, -30, -50},
-            {-30, -30,   0,   0,   0,   0, -30, -30},
-            {-30, -10,  20,  30,  30,  20, -10, -30},
-            {-30, -10,  30,  40,  40,  30, -10, -30},
-            {-30, -10,  30,  40,  40,  30, -10, -30},
-            {-30, -10,  20,  30,  30,  20, -10, -30},
-            {-30, -20, -10,   0,   0, -10, -20, -30},
-            {-50, -40, -30, -20, -20, -30, -40, -50},
-    };
 }
