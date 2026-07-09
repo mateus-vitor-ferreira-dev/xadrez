@@ -67,4 +67,20 @@ class MotorIATest {
 
         assertEquals(new Jogada(de("d4"), de("e5")), ordenadas.get(0));
     }
+
+    @Test
+    void prefereCentralizarOCavaloComMaterialIgual() {
+        // Sem capturas e material igual: a decisão é puramente posicional. Um
+        // cavalo na borda (a3) vale menos que no centro; a IA deve levá-lo a c4.
+        Tabuleiro t = new Tabuleiro();
+        t.colocarPeca(new Rei(Cor.BRANCO), de("e1"));
+        t.colocarPeca(new Cavalo(Cor.BRANCO), de("a3"));
+        t.colocarPeca(new Rei(Cor.PRETO), de("h8"));
+        Partida partida = new Partida(t, Cor.BRANCO);
+
+        Jogada jogada = motor.melhorJogada(partida, 1).orElseThrow();
+
+        assertEquals(de("a3"), jogada.origem());
+        assertEquals(de("c4"), jogada.destino());
+    }
 }
