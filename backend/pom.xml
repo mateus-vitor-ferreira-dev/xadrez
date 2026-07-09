@@ -166,6 +166,20 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+
+            <!--
+              Plugin para rodar classes com main() usando o classpath do projeto.
+              É como executamos o TORNEIO entre avaliadores sem subir o Spring:
+              mvn -q compile exec:java (argumentos via -Dexec.args; ver Torneio.java)
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <mainClass>com.mateusferreira.xadrez.torneio.Torneio</mainClass>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
