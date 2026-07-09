@@ -33,7 +33,8 @@ git checkout -b main && git push -u origin main
 ## Passo 1 — Backend na Railway
 
 1. Em railway.app: **New Project → Deploy from GitHub repo** → escolha o repo `xadrez`.
-   - A Railway detecta o **Dockerfile** na raiz e constrói o backend.
+   - Em **Settings → Root Directory**, defina `backend` (o **Dockerfile** e o
+     `pom.xml` moram nessa pasta). A Railway então detecta o Dockerfile e constrói o backend.
 2. Adicione o banco: **New → Database → Add PostgreSQL** (no mesmo projeto).
 3. No serviço do backend, aba **Variables**, adicione:
    ```
