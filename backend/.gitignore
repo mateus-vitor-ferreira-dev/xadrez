@@ -1,0 +1,19 @@
+# Compilados e artefatos de build do Maven
+target/
+
+# Arquivos de IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Node / frontend
+node_modules/
+dist/
+
+# Logs e sistema
+*.log
+.DS_Store
+.vercel
