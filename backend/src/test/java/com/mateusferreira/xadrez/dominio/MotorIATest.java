@@ -2,6 +2,8 @@ package com.mateusferreira.xadrez.dominio;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static com.mateusferreira.xadrez.dominio.Posicao.de;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,5 +46,25 @@ class MotorIATest {
         partida.mover(jogada.origem(), jogada.destino());
 
         assertTrue(partida.estaEmXequeMate(Cor.PRETO));
+    }
+
+    @Test
+    void ordenaCapturasPorMvvLva() {
+        // Brancas na vez, SEM xeque, com duas capturas possíveis:
+        //  - peão d4 x dama e5  (vítima cara, atacante barato -> melhor MVV-LVA)
+        //  - dama a1 x peão a7  (vítima barata, atacante caro)
+        // A ordenação deve colocar o peão-captura-dama à frente.
+        Tabuleiro t = new Tabuleiro();
+        t.colocarPeca(new Rei(Cor.BRANCO), de("h1"));
+        t.colocarPeca(new Rei(Cor.PRETO), de("h8"));
+        t.colocarPeca(new Peao(Cor.BRANCO), de("d4"));
+        t.colocarPeca(new Rainha(Cor.BRANCO), de("a1"));
+        t.colocarPeca(new Rainha(Cor.PRETO), de("e5"));
+        t.colocarPeca(new Peao(Cor.PRETO), de("a7"));
+        Partida partida = new Partida(t, Cor.BRANCO);
+
+        List<Jogada> ordenadas = motor.jogadasOrdenadas(partida, Cor.BRANCO);
+
+        assertEquals(new Jogada(de("d4"), de("e5")), ordenadas.get(0));
     }
 }

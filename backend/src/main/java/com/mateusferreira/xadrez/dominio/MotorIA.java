@@ -1,6 +1,7 @@
 package com.mateusferreira.xadrez.dominio;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,6 +12,12 @@ import java.util.Optional;
  * dois lados jogam o melhor possível, e escolhe o lance que leva à melhor
  * posição para ela. A "nota" de uma posição é a vantagem de material.
  *
+ * A poda alpha-beta corta muito mais quando os lances promissores são vistos
+ * PRIMEIRO. Por isso ordenamos os lances antes de percorrê-los: capturas na
+ * frente das jogadas quietas e, entre as capturas, por MVV-LVA (Most Valuable
+ * Victim, Least Valuable Attacker — capturar dama com peão vem antes de capturar
+ * peão com dama). O resultado escolhido é o mesmo; só chegamos nele mais rápido.
+ *
  * É Java puro (não conhece Spring nem banco): opera só sobre a Partida.
  */
 public class MotorIA {
@@ -18,6 +25,8 @@ public class MotorIA {
     // Pontuação de uma vitória/derrota por mate. Bem maior que qualquer material.
     private static final int MATE = 1_000_000;
     private static final int INFINITO = 9_999_999;
+    // Toda captura pontua acima de qualquer lance quieto na ordenação.
+    private static final int BASE_CAPTURA = 10_000;
 
     /**
      * Escolhe o melhor lance para o jogador da vez, olhando 'profundidade'
@@ -25,7 +34,7 @@ public class MotorIA {
      */
     public Optional<Jogada> melhorJogada(Partida partida, int profundidade) {
         Cor cor = partida.getJogadorAtual();
-        List<Jogada> jogadas = jogadasLegais(partida, cor);
+        List<Jogada> jogadas = jogadasOrdenadas(partida, cor);
         if (jogadas.isEmpty()) {
             return Optional.empty();
         }
@@ -63,6 +72,8 @@ public class MotorIA {
         if (profundidade == 0) {
             return avaliar(partida, cor);
         }
+        // Só vale ordenar quando vamos de fato percorrer os lances (não no leaf acima).
+        ordenar(jogadas, partida);
 
         int melhor = -INFINITO;
         for (Jogada jogada : jogadas) {
@@ -109,5 +120,55 @@ public class MotorIA {
             }
         }
         return jogadas;
+    }
+
+    /** Lances legais de 'cor' já ordenados para a poda (capturas primeiro, MVV-LVA). */
+    List<Jogada> jogadasOrdenadas(Partida partida, Cor cor) {
+        List<Jogada> jogadas = jogadasLegais(partida, cor);
+        ordenar(jogadas, partida);
+        return jogadas;
+    }
+
+    /** Ordena a lista in-place por {@link #scoreOrdenacao} decrescente. */
+    private void ordenar(List<Jogada> jogadas, Partida partida) {
+        jogadas.sort(Comparator.comparingInt((Jogada j) -> scoreOrdenacao(partida, j)).reversed());
+    }
+
+    /**
+     * Nota de ordenação (não de avaliação): capturas ficam acima das jogadas
+     * quietas e, entre elas, valem mais as que capturam peça cara com peça barata
+     * (MVV-LVA). Jogadas quietas valem 0.
+     */
+    private int scoreOrdenacao(Partida partida, Jogada jogada) {
+        if (!ehCaptura(partida, jogada)) {
+            return 0;
+        }
+        int atacante = valor(partida.getTabuleiro().pecaEm(jogada.origem()));
+        return BASE_CAPTURA + 10 * valorVitima(partida, jogada) - atacante;
+    }
+
+    /**
+     * O lance é uma captura? Cobre a captura normal (peça no destino) e o
+     * en passant (o peão vai para a casa-alvo VAZIA, capturando o peão ao lado).
+     */
+    private boolean ehCaptura(Partida partida, Jogada jogada) {
+        Tabuleiro t = partida.getTabuleiro();
+        if (t.pecaEm(jogada.destino()) != null) {
+            return true;
+        }
+        return t.pecaEm(jogada.origem()) instanceof Peao
+                && jogada.destino().equals(partida.getAlvoEnPassant());
+    }
+
+    /** Valor da peça capturada por 'jogada' (0 se não for captura). */
+    private int valorVitima(Partida partida, Jogada jogada) {
+        Tabuleiro t = partida.getTabuleiro();
+        Peca alvo = t.pecaEm(jogada.destino());
+        if (alvo != null) {
+            return valor(alvo);
+        }
+        // En passant: a vítima é o peão que ficou na fileira da origem, coluna do destino.
+        Peca peaoCapturado = t.pecaEm(new Posicao(jogada.origem().linha(), jogada.destino().coluna()));
+        return peaoCapturado == null ? 0 : valor(peaoCapturado);
     }
 }
