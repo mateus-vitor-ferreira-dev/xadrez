@@ -143,6 +143,13 @@ def main() -> None:
     x_val = torch.from_numpy(densificar(indices[val_ids]))
     y_val = torch.from_numpy(alvos[val_ids]).unsqueeze(1)
 
+    # Guardamos (e exportamos) o MELHOR epoch pela validacao, nao o ultimo:
+    # em treinos longos o final pode sobreajustar; e exportar a cada melhora
+    # deixa o melhor-ate-agora no disco mesmo se a rodada for interrompida.
+    destino = Path(args.saida)
+    melhor_val = float("inf")
+    melhor_epoca = 0
+
     for epoca in range(1, args.epocas + 1):
         modelo.train()
         ordem = rng.permutation(treino_ids)
@@ -163,13 +170,21 @@ def main() -> None:
             prev_val = modelo(x_val)
             perda_val = perda_mse(prev_val, y_val).item()
             mae = mae_em_centipeoes(prev_val.numpy().reshape(-1), alvos[val_ids])
+        novo_melhor = perda_val < melhor_val
+        if novo_melhor:
+            melhor_val, melhor_epoca = perda_val, epoca
+            melhor_estado = {k: v.clone() for k, v in modelo.state_dict().items()}
+            exportar_onnx(modelo, destino)  # melhor-ate-agora sempre no disco
         print(f"epoca {epoca:2d}: treino MSE {soma_perda / passos:.5f} | "
-              f"val MSE {perda_val:.5f} | val MAE ~{mae:.0f} cp")
+              f"val MSE {perda_val:.5f} | val MAE ~{mae:.0f} cp"
+              + (" | * exportado" if novo_melhor else ""))
 
-    destino = Path(args.saida)
+    # Recarrega o melhor epoch e exporta/confere a partir dele.
+    modelo.load_state_dict(melhor_estado)
     exportar_onnx(modelo, destino)
     divergencia = conferir_export(modelo, destino, densificar(indices[val_ids[:64]]))
     tamanho_kb = destino.stat().st_size / 1024
+    print(f"melhor epoch: {melhor_epoca} (val MSE {melhor_val:.5f})")
     print(f"modelo salvo em {destino} ({tamanho_kb:.0f} KB); "
           f"divergencia onnx vs torch: {divergencia:.2e}")
     assert divergencia < 1e-5, "export ONNX divergiu do torch!"
