@@ -83,11 +83,31 @@ ONNX custa ordens de magnitude mais por nó que a avaliação artesanal, e com o
 MESMO tempo por lance a rede busca bem mais raso. Resultado negativo, medido e
 explicado — é o que o ablation existe para mostrar.
 
+### Rede v2 (2026-07-09; 2M posições, 30 épocas, checkpoint do melhor epoch)
+
+O treino longo SOBREAJUSTOU a partir da época 10 (val MSE 0,02922 na ép. 10 ->
+0,03016 na ép. 30, com o MSE de treino sempre caindo); o checkpoint por
+validação exportou a época 10. Torneio com a mesma configuração da v1:
+
+| Pareamento             | Placar (1º) | Score         | Elo (IC 95%)      | v1 (referência)  |
+|------------------------|-------------|---------------|-------------------|------------------|
+| Material x Posicional  | +3 =31 -6   | 46,3% ± 7,3   | -26 [-78, +24]    | -44 [-95, +6]    |
+| Material x Neural      | +14 =21 -5  | 61,3% ± 10,1  | +80 [+8, +158]    | +117 [+58, +184] |
+| Posicional x Neural    | +23 =15 -2  | 76,3% ± 9,2   | +203 [+124, +307] | +338 [+232, +544]|
+
+Leitura: 4x mais dados valeram **~+135 Elo** para a rede contra o Posicional
+(os ICs de v1 e v2 quase não se sobrepõem) e ~+37 contra o Material — mas ela
+ainda perde para os dois. Com o ganho por dados desacelerando e o sobreajuste
+chegando cedo, o gargalo aparente passa a ser a CAPACIDADE do modelo (MLP
+pequeno sobre planos binários) e o CUSTO por nó, não a quantidade de dados.
+De bônus, Material x Posicional replicou dentro do IC da primeira rodada.
+
 ## Melhorias futuras
 
-- Dataset/épocas maiores (o MSE de validação ainda caía na época 10) e rede
-  um pouco maior — o caminho mais direto para a Neural competir.
+- Rede maior e/ou features mais ricas (roque/en passant, planos de ataque):
+  a v2 mostrou que mais dados sozinhos não fecham o gap — o gargalo agora é
+  capacidade do modelo.
 - Reduzir o custo por nó: lote de inferências, ou usar a rede só na folha da
   quiescência (as buscas internas com avaliação barata).
-- Enriquecer features (roque/en passant).
+- Regularização/lr-schedule para adiar o sobreajuste (chegou na época 10).
 - Mais aberturas na suíte para ICs mais apertados.
