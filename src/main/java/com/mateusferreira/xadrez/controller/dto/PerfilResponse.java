@@ -5,7 +5,7 @@ package com.mateusferreira.xadrez.controller.dto;
  * devolvidos após salvar. Diferente do {@link TokenResponse} (a "sessão"), aqui
  * moram campos privados/editáveis como {@code telefone} — que não pertencem ao
  * token público. O {@code usuario} (apelido) vem junto só para exibir; a edição
- * dele fica fora deste escopo. {@code telefone} e {@code fotoUrl} são nullable.
+ * dele fica fora deste escopo. {@code telefone} é nullable.
  */
-public record PerfilResponse(String usuario, String email, String telefone, String fotoUrl) {
+public record PerfilResponse(String usuario, String email, String telefone) {
 }
