@@ -140,6 +140,19 @@
             <artifactId>google-api-client</artifactId>
             <version>2.7.0</version>
         </dependency>
+
+        <!--
+          ONNX Runtime: executa modelos de rede neural exportados em ONNX.
+          É o que permite o AvaliadorNeural carregar um modelo treinado em
+          Python (PyTorch) e usá-lo como função de avaliação da IA, sem
+          reimplementar a rede em Java. Atenção: o jar embute as bibliotecas
+          nativas (Linux/Windows/macOS), então é uma dependência pesada.
+        -->
+        <dependency>
+            <groupId>com.microsoft.onnxruntime</groupId>
+            <artifactId>onnxruntime</artifactId>
+            <version>1.22.0</version>
+        </dependency>
     </dependencies>
 
     <build>
