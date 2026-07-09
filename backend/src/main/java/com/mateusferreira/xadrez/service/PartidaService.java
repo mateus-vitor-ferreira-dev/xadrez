@@ -144,21 +144,32 @@ public class PartidaService {
     }
 
     /**
-     * Faz a IA jogar pelo jogador da vez (nível = profundidade da busca, 1–4).
-     * Partidas contra a IA são locais e NÃO pontuam Elo.
+     * Faz a IA jogar pelo jogador da vez. O 'nível' agora é um ORÇAMENTO DE TEMPO:
+     * o motor usa aprofundamento iterativo e pensa por ~esse tempo (quanto maior o
+     * nível, mais fundo ele chega). Partidas contra a IA são locais e NÃO pontuam Elo.
      */
     public ResultadoPartida jogarIA(Long id, int nivel) {
         PartidaEntity entity = buscar(id);
         Partida partida = PartidaMapper.paraDominio(entity);
 
-        int profundidade = Math.max(1, Math.min(nivel, 4));
-        Optional<Jogada> jogada = motor.melhorJogada(partida, profundidade);
+        long orcamentoMs = orcamentoDoNivel(nivel);
+        Optional<Jogada> jogada = motor.melhorJogada(partida, orcamentoMs);
         if (jogada.isPresent()) {
             Jogada j = jogada.get();
             partida.mover(j.origem(), j.destino()); // IA promove para rainha (padrão)
             salvar(entity, partida);
         }
         return montar(entity, partida);
+    }
+
+    /** Orçamento de tempo (ms) por nível de dificuldade (1–4; fora disso, nível 2). */
+    private long orcamentoDoNivel(int nivel) {
+        return switch (Math.max(1, Math.min(nivel, 4))) {
+            case 1 -> 300L;
+            case 3 -> 3_000L;
+            case 4 -> 6_000L;
+            default -> 1_000L; // nível 2 (padrão)
+        };
     }
 
     /**
