@@ -70,9 +70,10 @@ public class MotorIA {
         if (jogadas.isEmpty()) {
             return partida.estaEmXeque(cor) ? -MATE : 0;
         }
-        // Chegou ao limite da busca: avalia a posição pela vantagem de material.
+        // Chegou ao limite da busca: em vez de avaliar já, estende a busca só nas
+        // capturas (quiescência) para não parar no meio de uma troca (horizonte).
         if (profundidade == 0) {
-            return avaliar(partida, cor);
+            return quiescencia(partida, alfa, beta);
         }
         // Só vale ordenar quando vamos de fato percorrer os lances (não no leaf acima).
         ordenar(jogadas, partida);
@@ -89,6 +90,53 @@ public class MotorIA {
             }
         }
         return melhor;
+    }
+
+    /**
+     * Busca de quiescência: no limite da profundidade, continua explorando APENAS
+     * capturas até a posição ficar "quieta". Assim a IA não é enganada pelo efeito
+     * horizonte — não conta como ganho uma captura que perde material na recaptura
+     * do lance seguinte.
+     *
+     * 'standPat' é a nota de parar aqui (não somos obrigados a capturar): se já
+     * supera beta, podamos; senão vira o piso de alfa. Termina sempre, porque cada
+     * captura reduz o material em campo.
+     */
+    private int quiescencia(Partida partida, int alfa, int beta) {
+        Cor cor = partida.getJogadorAtual();
+        int standPat = avaliar(partida, cor);
+        if (standPat >= beta) {
+            return beta;
+        }
+        if (standPat > alfa) {
+            alfa = standPat;
+        }
+
+        List<Jogada> capturas = capturasLegais(partida, cor);
+        ordenar(capturas, partida);
+        for (Jogada jogada : capturas) {
+            Partida copia = partida.copia();
+            copia.mover(jogada.origem(), jogada.destino());
+            int valor = -quiescencia(copia, -beta, -alfa);
+            if (valor >= beta) {
+                return beta;
+            }
+            if (valor > alfa) {
+                alfa = valor;
+            }
+        }
+        return alfa;
+    }
+
+    /** Só as capturas legais de 'cor' (subconjunto de jogadasLegais). */
+    private List<Jogada> capturasLegais(Partida partida, Cor cor) {
+        List<Jogada> capturas = new ArrayList<>();
+        for (Jogada jogada : jogadasLegais(partida, cor)) {
+            if (ehCaptura(partida, jogada)) {
+                capturas.add(jogada);
+            }
+        }
+        return capturas;
     }
 
     /**

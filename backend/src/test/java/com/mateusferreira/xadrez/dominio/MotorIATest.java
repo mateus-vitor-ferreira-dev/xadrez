@@ -6,6 +6,7 @@ import java.util.List;
 
 import static com.mateusferreira.xadrez.dominio.Posicao.de;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MotorIATest {
@@ -82,5 +83,23 @@ class MotorIATest {
 
         assertEquals(de("a3"), jogada.origem());
         assertEquals(de("c4"), jogada.destino());
+    }
+
+    @Test
+    void naoCapturaPeaoDefendidoQuePerdeDama() {
+        // Efeito horizonte: a dama branca pode capturar o peão d5 (ganho aparente
+        // de +1), mas o peão está defendido por c6 e a dama seria recapturada. Com
+        // quiescência a IA enxerga a recaptura e NÃO joga Dxd5.
+        Tabuleiro t = new Tabuleiro();
+        t.colocarPeca(new Rei(Cor.BRANCO), de("e1"));
+        t.colocarPeca(new Rainha(Cor.BRANCO), de("d1"));
+        t.colocarPeca(new Rei(Cor.PRETO), de("h8"));
+        t.colocarPeca(new Peao(Cor.PRETO), de("d5"));
+        t.colocarPeca(new Peao(Cor.PRETO), de("c6"));
+        Partida partida = new Partida(t, Cor.BRANCO);
+
+        Jogada jogada = motor.melhorJogada(partida, 1).orElseThrow();
+
+        assertNotEquals(de("d5"), jogada.destino()); // não morde a isca
     }
 }
