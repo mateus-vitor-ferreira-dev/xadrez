@@ -107,6 +107,28 @@ chegando cedo, o gargalo aparente passa a ser a CAPACIDADE do modelo (MLP
 pequeno sobre planos binários) e o CUSTO por nó, não a quantidade de dados.
 De bônus, Material x Posicional replicou dentro do IC da primeira rodada.
 
+### Rede v3 (2026-07-10; 780 features c/ roque+en passant, MLP 512/64)
+
+Treino: melhor época = 6 (val MSE 0,02785, contra 0,02922 da v2; MAE ~263 cp,
+contra ~277) — o avaliador FICOU melhor nas métricas de treino. Torneio com a
+mesma configuração:
+
+| Pareamento             | Placar (1º) | Score         | Elo (IC 95%)      | v2 (referência)   |
+|------------------------|-------------|---------------|-------------------|-------------------|
+| Material x Posicional  | +1 =29 -10  | 38,8% ± 7,3   | -80 [-136, -27]   | -26 [-78, +24]    |
+| Material x Neural      | +19 =18 -3  | 70,0% ± 9,7   | +147 [+73, +237]  | +80 [+8, +158]    |
+| Posicional x Neural    | +22 =11 -7  | 68,8% ± 11,8  | +137 [+48, +247]  | +203 [+124, +307] |
+
+Leitura: em FORÇA DE JOGO a v3 ficou ~estável dentro dos ICs (melhorou contra
+o Posicional — inclusive com 7 vitórias, contra 2 da v2 — e piorou contra o
+Material; os ICs de v2 e v3 se sobrepõem nos dois casos). A explicação mais
+plausível: a rede maior avalia melhor, mas custa mais por nó e busca mais raso
+no mesmo tempo — o ganho de qualidade foi consumido pelo custo. Conclusão do
+ciclo v1->v3: o gargalo dominante agora é comprovadamente o CUSTO POR NÓ
+(pendência registrada), não a qualidade do treino. Nota: Material x Posicional
+oscilou entre rodadas (-44/-26/-80); agregado, o Posicional é claramente
+melhor, mas vale ampliar a suíte para ICs mais estáveis.
+
 ## Melhorias futuras
 
 - Rede maior e/ou features mais ricas (roque/en passant, planos de ataque):
