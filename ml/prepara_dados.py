@@ -7,17 +7,20 @@ de posicoes ja avaliadas pelo Stockfish, uma por linha:
 
 e converte cada posicao para o contrato do AvaliadorNeural (ver ml/README.md):
 
-- FEATURES relativas a quem esta na vez: 12 planos de 8x8; para as pretas o
-  tabuleiro e espelhado na vertical e as cores trocadas.
-  indice = (tipo*2 + lado)*64 + (linha*8 + coluna).
+- FEATURES relativas a quem esta na vez: 12 planos de 8x8 (para as pretas o
+  tabuleiro e espelhado na vertical e as cores trocadas;
+  indice = (tipo*2 + lado)*64 + (linha*8 + coluna)), MAIS os direitos de roque
+  (768..771: meu rei/dama, dele rei/dama) e a coluna do alvo de en passant
+  (772..779) — total 780.
 - ROTULO = probabilidade de vitoria de quem esta na vez:
   p = sigmoid(cp_da_vez / 173.7178). O cp do Lichess e na otica das BRANCAS,
   entao negamos quando a vez e das pretas. Mate anunciado vira p = 1.0 ou 0.0.
 
 Para nao gastar disco, salvamos as features de forma ESPARSA: cada posicao tem
-no maximo 32 pecas, entao guardamos so os INDICES ocupados (uint16, com 65535
-de preenchimento) — ~70 bytes/posicao em vez dos 3 KB do vetor denso. O
-treina.py densifica lote a lote.
+no maximo 37 features ativas (32 pecas + 4 roques + 1 en passant), entao
+guardamos so os INDICES ocupados (uint16, com 65535 de preenchimento) —
+~80 bytes/posicao em vez dos 3 KB do vetor denso. O treina.py densifica
+lote a lote.
 
 O download e em STREAMING com parada antecipada: baixamos e descomprimimos so
 ate juntar --limite posicoes (o arquivo completo tem dezenas de GB; nao
@@ -42,15 +45,17 @@ import zstandard
 
 URL_PADRAO = "https://database.lichess.org/lichess_db_eval.jsonl.zst"
 ESCALA_CP = 173.7178          # mesma escala logistica do AvaliadorNeural.java
-MAX_PECAS = 32                # limite fisico de pecas numa posicao legal
-PREENCHIMENTO = 65535         # indice-sentinela para "sem peca" (uint16 max)
+BASE_ROQUE = 12 * 64          # 768..771: direitos de roque relativos
+BASE_ENPASSANT = BASE_ROQUE + 4  # 772..779: coluna do alvo de en passant
+MAX_ATIVAS = 32 + 4 + 1       # pecas + roques + en passant = 37 features ativas
+PREENCHIMENTO = 65535         # indice-sentinela para "vazio" (uint16 max)
 
 # char do FEN -> tipo 0..5 (peao, cavalo, bispo, torre, rainha, rei)
 TIPO_DA_LETRA = {"p": 0, "n": 1, "b": 2, "r": 3, "q": 4, "k": 5}
 
 
 def indices_da_fen(fen: str) -> tuple[list[int], bool] | None:
-    """Converte o FEN nos indices esparsos das 768 features, relativos a vez.
+    """Converte o FEN nos indices esparsos das 780 features, relativos a vez.
 
     Devolve (indices, vez_das_brancas), ou None se o FEN for invalido.
     """
@@ -79,8 +84,22 @@ def indices_da_fen(fen: str) -> tuple[list[int], bool] | None:
             lado = 0 if peca_branca == vez_das_brancas else 1
             indices.append((tipo * 2 + lado) * 64 + linha_rel * 8 + coluna)
             coluna += 1
-    if not indices or len(indices) > MAX_PECAS:
+    if not indices or len(indices) > 32:
         return None
+
+    # Direitos de roque relativos (campo 3 do FEN, "KQkq"/subconjunto/"-"):
+    # meu = maiusculas se e a vez das brancas; alas nao mudam com o espelhamento.
+    roque = campos[2] if len(campos) > 2 else "-"
+    minhas, dele = ("KQ", "kq") if vez_das_brancas else ("kq", "KQ")
+    for pos, ch in enumerate(minhas + dele):
+        if ch in roque:
+            indices.append(BASE_ROQUE + pos)
+
+    # Coluna do alvo de en passant (campo 4, ex. "e3"; coluna e invariante).
+    alvo_ep = campos[3] if len(campos) > 3 else "-"
+    if alvo_ep != "-" and "a" <= alvo_ep[0] <= "h":
+        indices.append(BASE_ENPASSANT + (ord(alvo_ep[0]) - ord("a")))
+
     return indices, vez_das_brancas
 
 
@@ -119,7 +138,7 @@ def main() -> None:
     parser.add_argument("--saida", default=str(Path(__file__).parent / "dados" / "posicoes.npz"))
     args = parser.parse_args()
 
-    indices = np.full((args.limite, MAX_PECAS), PREENCHIMENTO, dtype=np.uint16)
+    indices = np.full((args.limite, MAX_ATIVAS), PREENCHIMENTO, dtype=np.uint16)
     alvos = np.zeros(args.limite, dtype=np.float32)
     coletadas = puladas = 0
 

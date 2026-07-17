@@ -3,14 +3,17 @@
 O dummy segue o MESMO contrato que o modelo treinado de verdade seguirá
 (ver AvaliadorNeural.java):
 
-  entrada: "features" float[1][768] — 12 planos de 8x8 achatados, na OTICA DE
-           QUEM AVALIA (para as pretas o tabuleiro e espelhado e as cores
-           trocadas — quem codifica assim e o lado Java).
-           indice = (tipo*2 + lado)*64 + (linha*8 + coluna)
-           tipo 0..5 = peao, cavalo, bispo, torre, rainha, rei
-           lado 0 = peca de quem avalia, 1 = do oponente; casa ocupada = 1.0
+  entrada: "features" float[1][780], na OTICA DE QUEM AVALIA (para as pretas o
+           tabuleiro e espelhado e as cores trocadas — quem codifica e o Java):
+           0..767   12 planos de 8x8: (tipo*2 + lado)*64 + (linha*8 + coluna)
+                    tipo 0..5 = peao, cavalo, bispo, torre, rainha, rei
+                    lado 0 = peca de quem avalia, 1 = do oponente
+           768..771 direitos de roque (meu rei/dama, dele rei/dama)
+           772..779 coluna do alvo de en passant (a..h), se houver
   saida:   "prob_vitoria" float[1][1] — probabilidade de VITORIA DE QUEM
            AVALIA, 0..1
+
+No dummy, roque e en passant tem peso ZERO (nao mudam material).
 
 Em vez de pesos treinados, o dummy usa o VALOR DE MATERIAL de cada peca:
 peso = +valor_cp/ESCALA nos planos de quem avalia e -valor_cp/ESCALA nos do
@@ -36,7 +39,7 @@ ESCALA_CP = 173.7178
 # Valores classicos em centipeoes, na ordem dos planos (rei = 0: nunca capturado).
 VALORES_CP = [100, 320, 330, 500, 900, 0]  # peao, cavalo, bispo, torre, rainha, rei
 
-FEATURES = 12 * 64
+FEATURES = 12 * 64 + 4 + 8  # planos + roque + en passant = 780
 
 
 def pesos_material() -> np.ndarray:

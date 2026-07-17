@@ -1,9 +1,10 @@
 """Treina o AvaliadorNeural e exporta o modelo em ONNX.
 
-Rede pequena (MLP 768 -> 256 -> 32 -> 1 com sigmoid na saida) treinada para
-prever a PROBABILIDADE DE VITORIA de quem esta na vez, sobre as posicoes
-preparadas pelo prepara_dados.py. A perda e MSE sobre a probabilidade — o
-mesmo alvo suave (cp -> sigmoid) usado por redes de avaliacao classicas.
+MLP 780 -> 512 -> 64 -> 1 com sigmoid na saida, treinado para prever a
+PROBABILIDADE DE VITORIA de quem esta na vez, sobre as posicoes preparadas
+pelo prepara_dados.py (12 planos de pecas + roque + en passant). A perda e
+MSE sobre a probabilidade — o mesmo alvo suave (cp -> sigmoid) usado por
+redes de avaliacao classicas.
 
 A exportacao ONNX e feita A MAO com onnx.helper a partir dos pesos treinados
 (MatMul/Add/Relu/Sigmoid), em vez de torch.onnx.export: o grafo resultante e
@@ -29,19 +30,19 @@ from onnx import TensorProto, helper
 from torch import nn
 
 ESCALA_CP = 173.7178  # mesma escala logistica do AvaliadorNeural.java
-FEATURES = 768
+FEATURES = 12 * 64 + 4 + 8  # planos + roque + en passant = 780
 SEMENTE = 20260709
 
 
 class RedeAvaliadora(nn.Module):
-    """MLP 768 -> 256 -> 32 -> 1; sigmoid na saida (probabilidade de vitoria)."""
+    """MLP 780 -> 512 -> 64 -> 1; sigmoid na saida (probabilidade de vitoria)."""
 
     def __init__(self) -> None:
         super().__init__()
         self.corpo = nn.Sequential(
-            nn.Linear(FEATURES, 256), nn.ReLU(),
-            nn.Linear(256, 32), nn.ReLU(),
-            nn.Linear(32, 1), nn.Sigmoid(),
+            nn.Linear(FEATURES, 512), nn.ReLU(),
+            nn.Linear(512, 64), nn.ReLU(),
+            nn.Linear(64, 1), nn.Sigmoid(),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -143,6 +144,13 @@ def main() -> None:
     x_val = torch.from_numpy(densificar(indices[val_ids]))
     y_val = torch.from_numpy(alvos[val_ids]).unsqueeze(1)
 
+    # Guardamos (e exportamos) o MELHOR epoch pela validacao, nao o ultimo:
+    # em treinos longos o final pode sobreajustar; e exportar a cada melhora
+    # deixa o melhor-ate-agora no disco mesmo se a rodada for interrompida.
+    destino = Path(args.saida)
+    melhor_val = float("inf")
+    melhor_epoca = 0
+
     for epoca in range(1, args.epocas + 1):
         modelo.train()
         ordem = rng.permutation(treino_ids)
@@ -163,13 +171,21 @@ def main() -> None:
             prev_val = modelo(x_val)
             perda_val = perda_mse(prev_val, y_val).item()
             mae = mae_em_centipeoes(prev_val.numpy().reshape(-1), alvos[val_ids])
+        novo_melhor = perda_val < melhor_val
+        if novo_melhor:
+            melhor_val, melhor_epoca = perda_val, epoca
+            melhor_estado = {k: v.clone() for k, v in modelo.state_dict().items()}
+            exportar_onnx(modelo, destino)  # melhor-ate-agora sempre no disco
         print(f"epoca {epoca:2d}: treino MSE {soma_perda / passos:.5f} | "
-              f"val MSE {perda_val:.5f} | val MAE ~{mae:.0f} cp")
+              f"val MSE {perda_val:.5f} | val MAE ~{mae:.0f} cp"
+              + (" | * exportado" if novo_melhor else ""))
 
-    destino = Path(args.saida)
+    # Recarrega o melhor epoch e exporta/confere a partir dele.
+    modelo.load_state_dict(melhor_estado)
     exportar_onnx(modelo, destino)
     divergencia = conferir_export(modelo, destino, densificar(indices[val_ids[:64]]))
     tamanho_kb = destino.stat().st_size / 1024
+    print(f"melhor epoch: {melhor_epoca} (val MSE {melhor_val:.5f})")
     print(f"modelo salvo em {destino} ({tamanho_kb:.0f} KB); "
           f"divergencia onnx vs torch: {divergencia:.2e}")
     assert divergencia < 1e-5, "export ONNX divergiu do torch!"
