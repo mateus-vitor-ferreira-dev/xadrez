@@ -140,6 +140,19 @@
             <artifactId>google-api-client</artifactId>
             <version>2.7.0</version>
         </dependency>
+
+        <!--
+          ONNX Runtime: executa modelos de rede neural exportados em ONNX.
+          É o que permite o AvaliadorNeural carregar um modelo treinado em
+          Python (PyTorch) e usá-lo como função de avaliação da IA, sem
+          reimplementar a rede em Java. Atenção: o jar embute as bibliotecas
+          nativas (Linux/Windows/macOS), então é uma dependência pesada.
+        -->
+        <dependency>
+            <groupId>com.microsoft.onnxruntime</groupId>
+            <artifactId>onnxruntime</artifactId>
+            <version>1.22.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -152,6 +165,20 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <!--
+              Plugin para rodar classes com main() usando o classpath do projeto.
+              É como executamos o TORNEIO entre avaliadores sem subir o Spring:
+              mvn -q compile exec:java (argumentos via -Dexec.args; ver Torneio.java)
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <mainClass>com.mateusferreira.xadrez.torneio.Torneio</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
