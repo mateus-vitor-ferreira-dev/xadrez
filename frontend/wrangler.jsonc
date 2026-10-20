@@ -11,5 +11,8 @@
     "not_found_handling": "single-page-application"
   },
   // Cada branch ganha um link próprio de preview, como na Vercel
-  "preview_urls": true
+  "preview_urls": true,
+  // Obrigatório para o "npx wrangler preview", o comando de preview do Workers Builds.
+  // Os previews não herdam as configurações de produção; vazio basta para um site estático.
+  "previews": {}
 }
