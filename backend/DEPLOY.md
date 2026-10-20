@@ -1,9 +1,9 @@
-# Deploy — Xadrez (backend na Railway, frontend na Vercel)
+# Deploy — Xadrez (backend na Railway, frontend no Cloudflare Workers)
 
 Arquitetura no ar:
 
 ```
-Navegador → Vercel (frontend React estático) → Railway (Spring Boot + PostgreSQL)
+Navegador → Cloudflare Workers (frontend React estático) → Railway (Spring Boot + PostgreSQL)
 ```
 
 O que já está preparado no código:
@@ -12,7 +12,7 @@ O que já está preparado no código:
 - **Driver PostgreSQL** no `pom.xml` (escopo `runtime`).
 - **CORS** configurável (`CorsConfig` + variável `APP_CORS_ALLOWED_ORIGINS`).
 - **Dockerfile** multi-stage (build com Maven, runtime com JRE 21).
-- **Frontend** usa `VITE_API_URL` para achar o backend em produção.
+- **Frontend** usa `VITE_API_URL` para achar o backend em produção (fica em `frontend/.env.production`).
 
 ---
 
@@ -47,34 +47,42 @@ git checkout -b main && git push -u origin main
 4. Aba **Settings → Networking → Generate Domain**. Anote a URL (ex.: `https://xadrez-production.up.railway.app`).
 5. Teste: `curl -X POST https://SUA-URL-RAILWAY/partidas` deve retornar um JSON com `id`.
 
-## Passo 2 — Frontend na Vercel
+## Passo 2 — Frontend no Cloudflare Workers
 
-1. Em vercel.com: **Add New → Project** → importe o mesmo repo `xadrez`.
-2. **Root Directory:** selecione `frontend` (o app React está numa subpasta).
-   - Framework: a Vercel detecta **Vite** sozinha (build `npm run build`, saída `dist`).
-3. **Environment Variables**, adicione:
+O frontend é estático (o build do Vite em `frontend/dist`) e já tem o `frontend/wrangler.jsonc`,
+com o fallback de SPA para as rotas do React Router.
+
+1. Em `frontend/.env.production`, confira o endereço do backend:
    ```
-   VITE_API_URL = https://SUA-URL-RAILWAY     (sem barra no final)
+   VITE_API_URL=https://SUA-URL-RAILWAY     (sem barra no final)
    ```
-4. **Deploy.** Anote a URL final (ex.: `https://xadrez.vercel.app`).
+   Não é segredo (vai no JavaScript do navegador), por isso fica no repositório.
+2. No painel da Cloudflare: **Workers & Pages → Create → Import a repository** → repo `xadrez`.
+   - **Root directory:** `frontend`
+   - **Build command:** `npm run build` · **Deploy command:** `npx wrangler deploy`
+   - **Production branch:** `main`
+3. A cada push na `main` sai uma versão nova, e cada branch ganha um link de preview.
+   URL de produção: `https://xadrez.desenvolvedoracodexa.workers.dev`.
+
+Deploy manual, se precisar: `cd frontend && npm run build && npx wrangler deploy`.
 
 ## Passo 3 — Fechar o cadeado do CORS
 
-Agora que você tem a URL da Vercel, volte à **Railway → Variables** do backend e adicione:
+Com a URL do frontend em mãos, volte à **Railway → Variables** do backend e defina:
 ```
-APP_CORS_ALLOWED_ORIGINS = https://xadrez.vercel.app
+APP_CORS_ALLOWED_ORIGINS = https://xadrez.desenvolvedoracodexa.workers.dev,https://*-xadrez.desenvolvedoracodexa.workers.dev
 ```
-> Dica: para aceitar também os *previews* da Vercel, use `https://*.vercel.app`
-> (o `CorsConfig` usa `allowedOriginPatterns`, que aceita curinga).
+> A segunda origem libera os *previews* por branch (o `CorsConfig` usa
+> `allowedOriginPatterns`, que aceita curinga).
 
-A Railway reinicia o backend sozinho. Pronto: abra a URL da Vercel e jogue. 🎉
+A Railway reinicia o backend sozinho. Pronto: abra a URL do frontend e jogue. 🎉
 
 ---
 
 ## Notas
 
 - **Ordem importa:** backend primeiro (para ter a URL da Railway → vai no `VITE_API_URL`);
-  depois frontend (para ter a URL da Vercel → vai no `APP_CORS_ALLOWED_ORIGINS`).
+  depois frontend (para ter a URL do frontend → vai no `APP_CORS_ALLOWED_ORIGINS`).
 - **Persistência:** com PostgreSQL, as partidas sobrevivem a reinícios/redeploys.
 - **Por que foi fácil trocar H2 → PostgreSQL?** O domínio nunca dependeu do banco; só
   mudaram dependência + configuração. Esse é o valor da separação em camadas.

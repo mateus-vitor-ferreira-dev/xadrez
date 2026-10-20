@@ -22,7 +22,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    // Reaproveita as mesmas origens do CORS (localhost no dev; *.vercel.app em prod).
+    // Reaproveita as mesmas origens do CORS (localhost no dev; o Cloudflare Workers em prod).
     @Value("${app.cors.allowed-origins:http://localhost:5173}")
     private String[] origensPermitidas;
 
