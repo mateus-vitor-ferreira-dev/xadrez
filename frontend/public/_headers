@@ -1,0 +1,6 @@
+# Cabeçalhos dos arquivos estáticos no Cloudflare. O index.html já sai com
+# "max-age=0, must-revalidate"; os arquivos de /assets têm hash no nome e podem
+# ficar em cache para sempre.
+/assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
