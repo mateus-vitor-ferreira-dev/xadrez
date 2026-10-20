@@ -1,0 +1,15 @@
+// Publicação no Cloudflare Workers, no lugar da Vercel. O frontend é estático (o build
+// do Vite em dist/), então não há código de Worker: só os arquivos.
+// Workers Builds: diretório raiz "frontend", build "npm run build", deploy "npx wrangler deploy".
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "xadrez",
+  "compatibility_date": "2026-10-19",
+  "assets": {
+    "directory": "./dist",
+    // Rota que só o React Router conhece (/partida, /ranking...) devolve o index.html
+    "not_found_handling": "single-page-application"
+  },
+  // Cada branch ganha um link próprio de preview, como na Vercel
+  "preview_urls": true
+}
