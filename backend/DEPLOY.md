@@ -1,10 +1,16 @@
-# Deploy — Xadrez (backend na Railway, frontend no Cloudflare Workers)
+# Deploy — Xadrez (backend no Coolify, frontend no Cloudflare Workers)
 
 Arquitetura no ar:
 
 ```
-Navegador → Cloudflare Workers (frontend React estático) → Railway (Spring Boot + PostgreSQL)
+Navegador → Cloudflare Workers (frontend React estático) → Coolify (Spring Boot + PostgreSQL)
 ```
+
+> **Desde outubro de 2026 o backend roda no Coolify**, no VPS da Codexa, em
+> `https://api-xadrez.digitalcodexa.com` (projeto `xadrez`, aplicação `xadrez-backend` e banco
+> `xadrez-db`, PostgreSQL 18 só na rede interna). O Coolify constrói pelo mesmo `backend/Dockerfile`
+> a partir da `main`. As variáveis são as mesmas descritas abaixo; as do banco apontam para o
+> `xadrez-db`. Os passos da Railway ficam abaixo como histórico e como roteiro de reinstalação.
 
 O que já está preparado no código:
 - **Porta dinâmica:** `server.port=${PORT:8080}` (a Railway injeta `PORT`).
